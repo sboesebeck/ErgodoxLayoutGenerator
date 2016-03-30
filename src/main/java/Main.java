@@ -2,17 +2,16 @@
  * Created by stephan on 29.03.16.
  */
 
-import com.sun.corba.se.impl.orbutil.graph.Graph;
 import javafx.application.Application;
+import javafx.beans.value.ChangeListener;
+import javafx.beans.value.ObservableValue;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.scene.Scene;
-import javafx.scene.canvas.Canvas;
-import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.control.Button;
-import javafx.scene.input.MouseEvent;
+import javafx.scene.layout.Pane;
 import javafx.scene.layout.StackPane;
-import javafx.scene.paint.Color;
+import javafx.scene.text.Font;
 import javafx.stage.Stage;
 
 
@@ -20,8 +19,20 @@ import javafx.stage.Stage;
  * TODO: Add Documentation here
  **/
 public class Main extends Application {
-    public final int width = 25;
-    public final int height = 25;
+    public final int pixelWidth = 40;
+    public final int pixelHeight = 25;
+    public final int pixelOffsetX=5;
+    public final int pixelOffsetY=5;
+
+    public final int offsetX=25;
+    public final int offsetY=25;
+
+    public int rightHalfOffset=400;
+    private double scaleX =1.0;
+    private double scaleY =1.0;
+
+    private ErgodoxLayout l = new ErgodoxLayout();
+
 
     public static void main(String[] args) {
         launch(args);
@@ -32,43 +43,122 @@ public class Main extends Application {
 
         StackPane root = new StackPane();
 
-        Canvas c = new Canvas(800, 600);
-        c.addEventHandler(MouseEvent.MOUSE_CLICKED, new EventHandler<MouseEvent>() {
-            public void handle(MouseEvent event) {
-                double x = event.getX();
-                double y = event.getY();
-                System.out.println("Clicked! "+ x +"/"+ y);
-            }
-        });
-        drawKeys(c.getGraphicsContext2D());
+//        Canvas c = new Canvas(800, 600);
+//        c.addEventHandler(MouseEvent.MOUSE_CLICKED, new EventHandler<MouseEvent>() {
+//            public void handle(MouseEvent event) {
+//                double x = event.getX();
+//                double y = event.getY();
+//
+//                boolean rightHalf=x>rightHalfOffset;
+//                if (rightHalf){
+//                    x-=rightHalfOffset;
+//                }
+//                int column=(int)((x-offsetX)/(pixelWidth +pixelOffset));
+//                int row=(int)((y-offsetY)/(pixelHeight +pixelOffset));
+//                System.out.println("Clicked! "+ x +"/"+ y+" == row: "+row+"  col: "+column);
+//
+//                int indexInLayout=0;
+//                for (int i=0;i<row;i++){
+//                    indexInLayout +=l.getRowLength().get(i);
+//                }
+//                if (rightHalf) indexInLayout+=l.keysOnHalf();
+//                Key k=l.getLayout().get(indexInLayout);
+//                System.out.println("Got key; "+k.getWidth()+"x"+k.getHeight());
+//
+//            }
+//        });
+//        drawKeys(c.getGraphicsCocntext2D());
 
-        root.getChildren().add(c);
 
-        Scene scene = new Scene(root, 800, 600);
+
+        final Pane canvas = new Pane();
+        canvas.setStyle("-fx-background-color: white;");
+        final int windowWidth = 800;
+        final int windowHeight = 500;
+        rightHalfOffset=windowWidth/2;
+        canvas.setPrefSize(windowWidth, windowHeight);
+
+        //canvas.getChildren().addAll(b);
+        for (int i=0;i<l.keysOnHalf()*2;i++) {
+            Button btn=new Button("");
+            final int idx=i;
+            btn.addEventHandler(ActionEvent.ACTION, new EventHandler<ActionEvent>() {
+                public void handle(ActionEvent event) {
+                    Key k=l.getLayout().get(idx);
+                    System.out.println("Key at "+idx+" "+k.getWidth()+"x"+k.getHeight());
+                }
+            });
+            canvas.getChildren().add(btn);
+        }
+        drawKeys(canvas);
+
+        root.getChildren().add(canvas);
+//        Circle circle = new Circle(50,Color.BLUE);
+//        circle.relocate(20, 20);
+//        Rectangle rectangle = new Rectangle(100,100,Color.RED);
+//        rectangle.relocate(70,70);
+//        canvas.getChildren().addAll(circle,rectangle);
+
+        Scene scene = new Scene(root, windowWidth, windowHeight);
 
         primaryStage.setTitle("Hello World!");
         primaryStage.setScene(scene);
         primaryStage.show();
+
+        scene.widthProperty().addListener(new ChangeListener<Number>() {
+            public void changed(ObservableValue<? extends Number> observable, Number oldValue, Number newValue) {
+                System.out.println("New width: "+newValue.toString());
+                double width=newValue.doubleValue();
+                if (width> windowWidth){
+                    scaleX =width/(double)windowWidth;
+                    rightHalfOffset= (int) (width/2);
+                    System.out.println("Drawing with new scale of "+scaleX);
+                    drawKeys(canvas);
+
+                }
+            }
+        });
+        scene.heightProperty().addListener(new ChangeListener<Number>() {
+            public void changed(ObservableValue<? extends Number> observable, Number oldValue, Number newValue) {
+                System.out.println("New height: "+newValue.toString());
+                double height=newValue.doubleValue();
+                if (height> windowHeight){
+                    scaleY  =height/(double)windowHeight;
+                    drawKeys(canvas);
+
+                }
+            }
+        });
     }
 
-    public void drawKeys(GraphicsContext g) {
-        ErgodoxLayout l = new ErgodoxLayout();
+    public void drawKeys(Pane canvas) {
         int row = 0;
-        int x = 25;
-        int y = 25;
+        int x = (int)(offsetX*scaleX);
+        int y = (int)(offsetY*scaleY);
         int idx = 0;
         int xoff = 0;
-
-        g.setStroke(Color.BLACK);
+        int canvasIdx=0;
         for (Key k : l.getLayout()) {
             idx++;
             if (k != null && !(k instanceof Key.NullKey)) {
-                g.setFill(Color.DARKGRAY);
-                g.fillRoundRect(x+2, y+2, k.getWidth() * width, k.getHeight() * height, 10, 10);
-                g.setFill(Color.GRAY);
-                g.fillRoundRect(x, y, k.getWidth() * width, k.getHeight() * height, 10, 10);
-                g.strokeRoundRect(x, y, k.getWidth() * width, k.getHeight() * height, 10, 10);
-                g.strokeText(idx + "/" + row, x, y + 15);
+                Button b= (Button) canvas.getChildren().get(canvasIdx++);
+                b.setText(row+"/"+idx);
+                b.setFont(Font.font(12));
+                b.setMaxWidth(k.getWidth()*pixelWidth*scaleX);
+                b.setPrefWidth(k.getWidth()*pixelWidth*scaleX);
+                b.setMinWidth(k.getWidth()*pixelWidth*scaleX);
+
+                b.setMaxHeight(k.getHeight()*pixelHeight*scaleY);
+                b.setPrefHeight(k.getHeight()*pixelHeight*scaleY);
+                b.setMinHeight(k.getHeight()*pixelHeight*scaleY);
+                b.relocate(x,y);
+
+//                g.setFill(Color.DARKGRAY);
+//                g.fillRoundRect(x+4, y+4, k.getWidth() * pixelWidth, k.getHeight() * pixelHeight, 10, 10);
+//                g.setFill(Color.GRAY);
+//                g.fillRoundRect(x, y, k.getWidth() * pixelWidth, k.getHeight() * pixelHeight, 10, 10);
+//                g.strokeRoundRect(x, y, k.getWidth() * pixelWidth, k.getHeight() * pixelHeight, 10, 10);
+//                g.strokeText(idx + "/" + row, x, y + 15);
             }
             if (k instanceof Key.NullKey) idx--;
             if (idx >= l.getRowLength().get(row)) {
@@ -76,20 +166,21 @@ public class Main extends Application {
                 row++;
 
                 if (row >= l.getRowLength().size()) {
-                    y = 25;
-                    xoff = 400;
+                    //switch to right half
+                    y = (int)(offsetY*scaleY);
+                    xoff = rightHalfOffset;
                     row = 0;
                     idx = 0;
                 } else {
-                    y += height * 1.2;
+                    y += pixelHeight*scaleY +pixelOffsetY;
                     idx = 0;
                 }
-                x = xoff + 25;
+                x = xoff + (int)(offsetX*scaleX);
             } else {
                 if (k != null) {
-                    x += width * 1.2 * k.getWidth();
+                    x += pixelWidth * k.getWidth()*scaleX+pixelOffsetX;
                 } else {
-                    x += width * 1.2;
+                    x += pixelWidth +pixelOffsetX;
                 }
             }
         }

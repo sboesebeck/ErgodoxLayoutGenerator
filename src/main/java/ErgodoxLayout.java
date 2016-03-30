@@ -169,7 +169,7 @@ public class ErgodoxLayout {
         rowLength.add(3);
         rowLength.add(1);
     }
-
+    public int keysOnHalf(){return 38;}
     public List<Key> getLayout() {
         return layout;
     }
