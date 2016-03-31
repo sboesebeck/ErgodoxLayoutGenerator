@@ -9,6 +9,7 @@ import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
+import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.StackPane;
 import javafx.scene.text.Font;
@@ -70,6 +71,11 @@ public class Main extends Application {
 //        drawKeys(c.getGraphicsCocntext2D());
 
 
+        root.addEventHandler(KeyEvent.KEY_PRESSED, new EventHandler<KeyEvent>() {
+            public void handle(KeyEvent event) {
+                System.out.println("KEyEvent: "+event.getCode().impl_getCode()+" name: KC_"+event.getCode().getName());
+            }
+        });
 
         final Pane canvas = new Pane();
         canvas.setStyle("-fx-background-color: white;");
@@ -79,13 +85,16 @@ public class Main extends Application {
         canvas.setPrefSize(windowWidth, windowHeight);
 
         //canvas.getChildren().addAll(b);
-        for (int i=0;i<l.keysOnHalf()*2;i++) {
+        int idx=0;
+        for (Key k:l.getLayout()) {
+            if (k instanceof Key.NullKey) continue;
+           k.setValue("idx: "+idx++);
             Button btn=new Button("");
-            final int idx=i;
+            final int i=idx;
             btn.addEventHandler(ActionEvent.ACTION, new EventHandler<ActionEvent>() {
                 public void handle(ActionEvent event) {
-                    Key k=l.getLayout().get(idx);
-                    System.out.println("Key at "+idx+" "+k.getWidth()+"x"+k.getHeight());
+                    Key k=l.getLayout().get(i);
+                    System.out.println("Key at "+i+" "+k.getWidth()+"x"+k.getHeight());
                 }
             });
             canvas.getChildren().add(btn);
@@ -112,7 +121,7 @@ public class Main extends Application {
                 if (width> windowWidth){
                     scaleX =width/(double)windowWidth;
                     rightHalfOffset= (int) (width/2);
-                    System.out.println("Drawing with new scale of "+scaleX);
+//                    System.out.println("Drawing with new scale of "+scaleX);
                     drawKeys(canvas);
 
                 }
@@ -142,7 +151,7 @@ public class Main extends Application {
             idx++;
             if (k != null && !(k instanceof Key.NullKey)) {
                 Button b= (Button) canvas.getChildren().get(canvasIdx++);
-                b.setText(row+"/"+idx);
+                b.setText(k.getValue()!=null?k.getValue():"");
                 b.setFont(Font.font(12));
                 b.setMaxWidth(k.getWidth()*pixelWidth*scaleX);
                 b.setPrefWidth(k.getWidth()*pixelWidth*scaleX);
