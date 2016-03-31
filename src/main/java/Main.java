@@ -9,6 +9,7 @@ import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
+import javafx.scene.control.Label;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.StackPane;
@@ -33,6 +34,14 @@ public class Main extends Application {
     private double scaleY =1.0;
 
     private ErgodoxLayout l = new ErgodoxLayout();
+
+    private Button setSourceDir;
+    private Label sourceDirLabel;
+    private Button createKeymap;
+    private Button openBtn;
+    private Button saveBtn;
+
+
 
 
     public static void main(String[] args) {
