@@ -1,4 +1,4 @@
-/**
+package de.caluga.ergodox; /**
  * Created by stephan on 29.03.16.
  */
 
@@ -8,12 +8,22 @@ import java.util.List;
 /**
  * TODO: Add Documentation here
  **/
-public class ErgodoxLayout {
+public class ErgodoxLayoutLayer {
 
     private List<Key> layout=new ArrayList();
     private List<Integer> rowLength=new ArrayList<Integer>();
-    
-    public ErgodoxLayout(){
+
+    private String name;
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public ErgodoxLayoutLayer(){
         //first row
         layout.add(Key.w2h1());
         layout.add(Key.w1h1());

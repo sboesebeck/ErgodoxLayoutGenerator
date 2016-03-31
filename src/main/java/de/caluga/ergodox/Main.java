@@ -1,4 +1,4 @@
-/**
+package de.caluga.ergodox; /**
  * Created by stephan on 29.03.16.
  */
 
@@ -16,6 +16,11 @@ import javafx.scene.effect.DropShadow;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
+import javafx.scene.control.ComboBox;
+import javafx.scene.control.Label;
+import javafx.scene.input.KeyEvent;
+import javafx.scene.layout.Pane;
+import javafx.scene.layout.StackPane;
 import javafx.scene.text.Font;
 import javafx.scene.text.TextAlignment;
 import javafx.stage.Stage;
@@ -40,6 +45,17 @@ public class Main extends Application {
     private Label selectedKey=null;
 
     private ErgodoxLayout l = new ErgodoxLayout();
+
+    private Button setSourceDir;
+    private Label sourceDirLabel;
+    private Button createKeymap;
+    private Button openBtn;
+    private Button saveBtn;
+    private int initialWindowWidth;
+    private int initialWindowHeight;
+    private double currentWindowHeight;
+    private double currentWindowWidth;
+    private ComboBox<String> macroCombo;
 
 
     public static void main(String[] args) {
@@ -75,34 +91,41 @@ public class Main extends Application {
 //
 //            }
 //        });
-//        drawKeys(c.getGraphicsCocntext2D());
+//        layout(c.getGraphicsCocntext2D());
 
 
+        root.addEventHandler(KeyEvent.KEY_PRESSED, new EventHandler<KeyEvent>() {
+            public void handle(KeyEvent event) {
+                System.out.println("KEyEvent: "+event.getCode().impl_getCode()+" name: KC_"+event.getCode().getName());
+            }
+        });
 
         final Pane canvas = new Pane();
         canvas.setStyle("-fx-background-color: white;");
-        final int windowWidth = 800;
-        final int windowHeight = 500;
-        rightHalfOffset=windowWidth/2;
-        canvas.setPrefSize(windowWidth, windowHeight);
+        initialWindowWidth = 800;
+        initialWindowHeight = 500;
+        this.currentWindowWidth=initialWindowWidth;
+        this.currentWindowHeight=initialWindowHeight;
+        rightHalfOffset= initialWindowWidth /2;
+        canvas.setPrefSize(initialWindowWidth, initialWindowHeight);
 
-        //canvas.getChildren().addAll(b);
-        for (int i=0;i<l.keysOnHalf()*2;i++) {
+        int idx=0;
+        for (Key k:l.getLayout()) {
 //            Button btn=new Button("");
-            final Label btn=new Label("");
-            btn.backgroundProperty().setValue(new Background(new BackgroundFill(Color.LIGHTGRAY, new CornerRadii(5), Insets.EMPTY)));
-            btn.setTextAlignment(TextAlignment.CENTER);
-            btn.borderProperty().setValue(new Border(new BorderStroke(Color.BLACK,BorderStrokeStyle.SOLID,new CornerRadii(5),new BorderWidths(1))));
+            if (k instanceof Key.NullKey) continue;
+            final Label label=new Label("");
+            label.backgroundProperty().setValue(new Background(new BackgroundFill(Color.LIGHTGRAY, new CornerRadii(5), Insets.EMPTY)));
+            label.setTextAlignment(TextAlignment.CENTER);
+            label.borderProperty().setValue(new Border(new BorderStroke(Color.BLACK,BorderStrokeStyle.SOLID,new CornerRadii(5),new BorderWidths(1))));
             DropShadow ds = new DropShadow();
             ds.setOffsetY(3.0f);
             ds.setColor(Color.color(0.4f, 0.4f, 0.4f));
-            btn.setEffect(ds);
-
-            final int idx=i;
-            btn.addEventHandler(MouseEvent.MOUSE_CLICKED, new EventHandler<MouseEvent>() {
+            label.setEffect(ds);
+            final int i=idx;
+            label.addEventHandler(MouseEvent.MOUSE_CLICKED, new EventHandler<MouseEvent>() {
                 public void handle(MouseEvent event) {
-                    Key k=l.getLayout().get(idx);
-                    System.out.println("Key at "+idx+" "+k.getWidth()+"x"+k.getHeight());
+                    Key k=l.getLayout().get(i);
+                    System.out.println("Key at "+i+" "+k.getWidth()+"x"+k.getHeight());
                     if (selectedKey!=null){
                         selectedKey.borderProperty().setValue(new Border(new BorderStroke(Color.BLACK,BorderStrokeStyle.SOLID,new CornerRadii(5),new BorderWidths(1))));
                         DropShadow ds = new DropShadow();
@@ -110,14 +133,33 @@ public class Main extends Application {
                         ds.setColor(Color.color(0.4f, 0.4f, 0.4f));
                         selectedKey.setEffect(ds);
                     }
-                    btn.setEffect(null);
-                    btn.borderProperty().setValue(new Border(new BorderStroke(Color.GREEN,BorderStrokeStyle.SOLID,new CornerRadii(5),new BorderWidths(2))));
-                    selectedKey=btn;
+                    label.setEffect(null);
+                    label.borderProperty().setValue(new Border(new BorderStroke(Color.GREEN,BorderStrokeStyle.SOLID,new CornerRadii(5),new BorderWidths(2))));
+                    selectedKey=label;
                 }
             });
-            canvas.getChildren().add(btn);
+            canvas.getChildren().add(label);
+            idx++;
         }
-        drawKeys(canvas);
+
+        setSourceDir=new Button("Set qmk-SourceDir");
+        openBtn=new Button("open");
+        saveBtn=new Button("save");
+        sourceDirLabel=new Label("...");
+        createKeymap=new Button("create");
+
+        macroCombo = new ComboBox<String>();
+        macroCombo.getItems().add("Smiley :-D");
+        macroCombo.getItems().add("Smiley :-(");
+        macroCombo.getItems().add("CTRL_SHIFT/#");
+
+        canvas.getChildren().add(macroCombo);
+        canvas.getChildren().add(setSourceDir);
+        canvas.getChildren().add(openBtn);
+        canvas.getChildren().add(saveBtn);
+        canvas.getChildren().add(sourceDirLabel);
+        canvas.getChildren().add(createKeymap);
+        layout(canvas);
 
         root.getChildren().add(canvas);
 //        Circle circle = new Circle(50,Color.BLUE);
@@ -126,21 +168,24 @@ public class Main extends Application {
 //        rectangle.relocate(70,70);
 //        canvas.getChildren().addAll(circle,rectangle);
 
-        Scene scene = new Scene(root, windowWidth, windowHeight);
 
-        primaryStage.setTitle("Hello World!");
+
+
+        Scene scene = new Scene(root, initialWindowWidth, initialWindowHeight);
+
+        primaryStage.setTitle("ErgodoxLayoutGenerator");
         primaryStage.setScene(scene);
         primaryStage.show();
 
         scene.widthProperty().addListener(new ChangeListener<Number>() {
             public void changed(ObservableValue<? extends Number> observable, Number oldValue, Number newValue) {
                 System.out.println("New width: "+newValue.toString());
-                double width=newValue.doubleValue();
-                if (width> windowWidth){
-                    scaleX =width/(double)windowWidth;
-                    rightHalfOffset= (int) (width/2);
-                    System.out.println("Drawing with new scale of "+scaleX);
-                    drawKeys(canvas);
+                currentWindowWidth=newValue.doubleValue();
+                if (currentWindowWidth> initialWindowWidth){
+                    scaleX =currentWindowWidth/(double) initialWindowWidth;
+                    rightHalfOffset= (int) (currentWindowWidth/2);
+//                    System.out.println("Drawing with new scale of "+scaleX);
+                    layout(canvas);
 
                 }
             }
@@ -148,17 +193,17 @@ public class Main extends Application {
         scene.heightProperty().addListener(new ChangeListener<Number>() {
             public void changed(ObservableValue<? extends Number> observable, Number oldValue, Number newValue) {
                 System.out.println("New height: "+newValue.toString());
-                double height=newValue.doubleValue();
-                if (height> windowHeight){
-                    scaleY  =height/(double)windowHeight;
-                    drawKeys(canvas);
+                currentWindowHeight=newValue.doubleValue();
+                if (currentWindowHeight> initialWindowHeight){
+                    scaleY  =currentWindowHeight/(double) initialWindowHeight;
+                    layout(canvas);
 
                 }
             }
         });
     }
 
-    public void drawKeys(Pane canvas) {
+    public void layout(Pane canvas) {
         int row = 0;
         int x = (int)(offsetX*scaleX);
         int y = (int)(offsetY*scaleY);
@@ -169,7 +214,7 @@ public class Main extends Application {
             idx++;
             if (k != null && !(k instanceof Key.NullKey)) {
                 Label b= (Label) canvas.getChildren().get(canvasIdx++);
-                b.setText(row+"/"+idx);
+                b.setText(k.getValue()!=null?k.getValue():"");
                 b.setFont(Font.font(12));
                 b.setMaxWidth(k.getWidth()*pixelWidth*scaleX);
                 b.setPrefWidth(k.getWidth()*pixelWidth*scaleX);
@@ -211,5 +256,12 @@ public class Main extends Application {
                 }
             }
         }
+
+        macroCombo.relocate(currentWindowWidth/2,currentWindowHeight-100);
+        setSourceDir.relocate(25,currentWindowHeight-30);
+        sourceDirLabel.relocate(250,currentWindowHeight-30);
+        createKeymap.relocate(currentWindowWidth-100,currentWindowHeight-30);
+        saveBtn.relocate(currentWindowWidth/2,currentWindowHeight-60);
+        openBtn.relocate(currentWindowWidth/2,currentWindowHeight-30);
     }
 }
