@@ -15,6 +15,11 @@ public class ErgodoxLayoutLayer {
 
     private String name;
 
+    public ErgodoxLayoutLayer(String name) {
+        this();
+        this.name = name;
+    }
+
     public String getName() {
         return name;
     }

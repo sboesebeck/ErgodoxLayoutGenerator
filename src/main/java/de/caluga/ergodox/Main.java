@@ -2,7 +2,6 @@ package de.caluga.ergodox; /**
  * Created by stephan on 29.03.16.
  */
 
-import com.sun.javafx.scene.layout.region.BorderImageSliceConverter;
 import javafx.application.Application;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
@@ -17,13 +16,15 @@ import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 import javafx.scene.control.ComboBox;
-import javafx.scene.control.Label;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.StackPane;
 import javafx.scene.text.Font;
 import javafx.scene.text.TextAlignment;
 import javafx.stage.Stage;
+
+import java.util.ArrayList;
+import java.util.List;
 
 
 /**
@@ -36,15 +37,16 @@ public class Main extends Application {
     public final int pixelOffsetY=5;
 
     public final int offsetX=25;
-    public final int offsetY=25;
+    public final int offsetY=75;
 
     public int rightHalfOffset=400;
     private double scaleX =1.0;
     private double scaleY =1.0;
 
-    private Label selectedKey=null;
+    private Label selectedGuiKey =null;
+    private int selectedKeyIndexInLayout=0;
 
-    private ErgodoxLayout l = new ErgodoxLayout();
+    private List<ErgodoxLayoutLayer> layers = new ArrayList<ErgodoxLayoutLayer>();
 
     private Button setSourceDir;
     private Label sourceDirLabel;
@@ -56,6 +58,13 @@ public class Main extends Application {
     private double currentWindowHeight;
     private double currentWindowWidth;
     private ComboBox<String> macroCombo;
+
+    private ComboBox<String> layerCombo;
+    private Button createLayer;
+    private Button deleteLayer;
+
+    private ErgodoxLayoutLayer currentLayer;
+    private Pane canvas;
 
 
     public static void main(String[] args) {
@@ -83,10 +92,10 @@ public class Main extends Application {
 //
 //                int indexInLayout=0;
 //                for (int i=0;i<row;i++){
-//                    indexInLayout +=l.getRowLength().get(i);
+//                    indexInLayout +=layers.getRowLength().get(i);
 //                }
-//                if (rightHalf) indexInLayout+=l.keysOnHalf();
-//                Key k=l.getLayout().get(indexInLayout);
+//                if (rightHalf) indexInLayout+=layers.keysOnHalf();
+//                Key k=layers.getLayout().get(indexInLayout);
 //                System.out.println("Got key; "+k.getWidth()+"x"+k.getHeight());
 //
 //            }
@@ -94,13 +103,11 @@ public class Main extends Application {
 //        layout(c.getGraphicsCocntext2D());
 
 
-        root.addEventHandler(KeyEvent.KEY_PRESSED, new EventHandler<KeyEvent>() {
-            public void handle(KeyEvent event) {
-                System.out.println("KEyEvent: "+event.getCode().impl_getCode()+" name: KC_"+event.getCode().getName());
-            }
-        });
+        layers.add(new ErgodoxLayoutLayer("base"));
+        currentLayer =layers.get(0); //base
 
-        final Pane canvas = new Pane();
+
+        canvas = new Pane();
         canvas.setStyle("-fx-background-color: white;");
         initialWindowWidth = 800;
         initialWindowHeight = 500;
@@ -109,10 +116,24 @@ public class Main extends Application {
         rightHalfOffset= initialWindowWidth /2;
         canvas.setPrefSize(initialWindowWidth, initialWindowHeight);
 
+        root.addEventHandler(KeyEvent.KEY_PRESSED, new EventHandler<KeyEvent>() {
+            public void handle(KeyEvent event) {
+                System.out.println("KEyEvent: "+event.getCode().impl_getCode()+" name: KC_"+event.getCode().getName());
+                if (selectedGuiKey !=null){
+                    currentLayer.getLayout().get(selectedKeyIndexInLayout).setValue(event.getCode().getName().toUpperCase());
+                    unmarkKey();
+                    selectedGuiKey =null;
+                    layout(canvas);
+                }
+            }
+        });
         int idx=0;
-        for (Key k:l.getLayout()) {
+        for (Key k: currentLayer.getLayout()) {
 //            Button btn=new Button("");
-            if (k instanceof Key.NullKey) continue;
+            if (k instanceof Key.NullKey) {
+                idx++;
+                continue;
+            }
             final Label label=new Label("");
             label.backgroundProperty().setValue(new Background(new BackgroundFill(Color.LIGHTGRAY, new CornerRadii(5), Insets.EMPTY)));
             label.setTextAlignment(TextAlignment.CENTER);
@@ -124,18 +145,15 @@ public class Main extends Application {
             final int i=idx;
             label.addEventHandler(MouseEvent.MOUSE_CLICKED, new EventHandler<MouseEvent>() {
                 public void handle(MouseEvent event) {
-                    Key k=l.getLayout().get(i);
+                    Key k= currentLayer.getLayout().get(i);
+                    selectedKeyIndexInLayout=i;
                     System.out.println("Key at "+i+" "+k.getWidth()+"x"+k.getHeight());
-                    if (selectedKey!=null){
-                        selectedKey.borderProperty().setValue(new Border(new BorderStroke(Color.BLACK,BorderStrokeStyle.SOLID,new CornerRadii(5),new BorderWidths(1))));
-                        DropShadow ds = new DropShadow();
-                        ds.setOffsetY(3.0f);
-                        ds.setColor(Color.color(0.4f, 0.4f, 0.4f));
-                        selectedKey.setEffect(ds);
+                    if (selectedGuiKey !=null){
+                        unmarkKey();
                     }
                     label.setEffect(null);
                     label.borderProperty().setValue(new Border(new BorderStroke(Color.GREEN,BorderStrokeStyle.SOLID,new CornerRadii(5),new BorderWidths(2))));
-                    selectedKey=label;
+                    selectedGuiKey =label;
                 }
             });
             canvas.getChildren().add(label);
@@ -153,12 +171,51 @@ public class Main extends Application {
         macroCombo.getItems().add("Smiley :-(");
         macroCombo.getItems().add("CTRL_SHIFT/#");
 
+        layerCombo=new ComboBox<String>();
+        layerCombo.getItems().add("Base");
+        layerCombo.getSelectionModel().select(0);
+        layerCombo.addEventHandler(ActionEvent.ACTION, new EventHandler<ActionEvent>() {
+            public void handle(ActionEvent event) {
+                System.out.println("Selected!");
+                currentLayer=layers.get(layerCombo.getSelectionModel().getSelectedIndex());
+                layout(canvas);
+            }
+        });
+
+        deleteLayer=new Button("delte layer");
+        deleteLayer.addEventHandler(ActionEvent.ACTION, new EventHandler<ActionEvent>() {
+            public void handle(ActionEvent event) {
+                if (layers.indexOf(currentLayer)==0){
+                    System.err.println("Cannot delete base layer");
+                } else {
+                    layers.remove(currentLayer);
+                    layerCombo.getItems().remove(currentLayer.getName());
+                    currentLayer=layers.get(0);
+                    layout(canvas);
+                }
+            }
+        });
+        createLayer=new Button("add layer");
+        createLayer.addEventHandler(ActionEvent.ACTION, new EventHandler<ActionEvent>() {
+            public void handle(ActionEvent event) {
+                ErgodoxLayoutLayer l = new ErgodoxLayoutLayer("Layer " + layers.size());
+                layers.add(l);
+                currentLayer=l;
+                layerCombo.getItems().add(l.getName());
+                layerCombo.getSelectionModel().select(layerCombo.getItems().size()-1);
+                layout(canvas);
+            }
+        });
+
         canvas.getChildren().add(macroCombo);
         canvas.getChildren().add(setSourceDir);
         canvas.getChildren().add(openBtn);
         canvas.getChildren().add(saveBtn);
         canvas.getChildren().add(sourceDirLabel);
         canvas.getChildren().add(createKeymap);
+        canvas.getChildren().add(createLayer);
+        canvas.getChildren().add(deleteLayer);
+        canvas.getChildren().add(layerCombo);
         layout(canvas);
 
         root.getChildren().add(canvas);
@@ -203,6 +260,14 @@ public class Main extends Application {
         });
     }
 
+    private void unmarkKey() {
+        selectedGuiKey.borderProperty().setValue(new Border(new BorderStroke(Color.BLACK, BorderStrokeStyle.SOLID,new CornerRadii(5),new BorderWidths(1))));
+        DropShadow ds = new DropShadow();
+        ds.setOffsetY(3.0f);
+        ds.setColor(Color.color(0.4f, 0.4f, 0.4f));
+        selectedGuiKey.setEffect(ds);
+    }
+
     public void layout(Pane canvas) {
         int row = 0;
         int x = (int)(offsetX*scaleX);
@@ -210,7 +275,7 @@ public class Main extends Application {
         int idx = 0;
         int xoff = 0;
         int canvasIdx=0;
-        for (Key k : l.getLayout()) {
+        for (Key k : currentLayer.getLayout()) {
             idx++;
             if (k != null && !(k instanceof Key.NullKey)) {
                 Label b= (Label) canvas.getChildren().get(canvasIdx++);
@@ -233,11 +298,11 @@ public class Main extends Application {
 //                g.strokeText(idx + "/" + row, x, y + 15);
             }
             if (k instanceof Key.NullKey) idx--;
-            if (idx >= l.getRowLength().get(row)) {
+            if (idx >= currentLayer.getRowLength().get(row)) {
 
                 row++;
 
-                if (row >= l.getRowLength().size()) {
+                if (row >= currentLayer.getRowLength().size()) {
                     //switch to right half
                     y = (int)(offsetY*scaleY);
                     xoff = rightHalfOffset;
@@ -263,5 +328,9 @@ public class Main extends Application {
         createKeymap.relocate(currentWindowWidth-100,currentWindowHeight-30);
         saveBtn.relocate(currentWindowWidth/2,currentWindowHeight-60);
         openBtn.relocate(currentWindowWidth/2,currentWindowHeight-30);
+
+        layerCombo.relocate(5,20);
+        createLayer.relocate(150,5);
+        deleteLayer.relocate(150,40);
     }
 }
