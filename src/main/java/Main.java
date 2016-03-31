@@ -2,16 +2,22 @@
  * Created by stephan on 29.03.16.
  */
 
+import com.sun.javafx.scene.layout.region.BorderImageSliceConverter;
 import javafx.application.Application;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
+import javafx.geometry.Insets;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
-import javafx.scene.layout.Pane;
-import javafx.scene.layout.StackPane;
+import javafx.scene.control.Label;
+import javafx.scene.effect.DropShadow;
+import javafx.scene.input.MouseEvent;
+import javafx.scene.layout.*;
+import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
+import javafx.scene.text.TextAlignment;
 import javafx.stage.Stage;
 
 
@@ -30,6 +36,8 @@ public class Main extends Application {
     public int rightHalfOffset=400;
     private double scaleX =1.0;
     private double scaleY =1.0;
+
+    private Label selectedKey=null;
 
     private ErgodoxLayout l = new ErgodoxLayout();
 
@@ -80,12 +88,31 @@ public class Main extends Application {
 
         //canvas.getChildren().addAll(b);
         for (int i=0;i<l.keysOnHalf()*2;i++) {
-            Button btn=new Button("");
+//            Button btn=new Button("");
+            final Label btn=new Label("");
+            btn.backgroundProperty().setValue(new Background(new BackgroundFill(Color.LIGHTGRAY, new CornerRadii(5), Insets.EMPTY)));
+            btn.setTextAlignment(TextAlignment.CENTER);
+            btn.borderProperty().setValue(new Border(new BorderStroke(Color.BLACK,BorderStrokeStyle.SOLID,new CornerRadii(5),new BorderWidths(1))));
+            DropShadow ds = new DropShadow();
+            ds.setOffsetY(3.0f);
+            ds.setColor(Color.color(0.4f, 0.4f, 0.4f));
+            btn.setEffect(ds);
+
             final int idx=i;
-            btn.addEventHandler(ActionEvent.ACTION, new EventHandler<ActionEvent>() {
-                public void handle(ActionEvent event) {
+            btn.addEventHandler(MouseEvent.MOUSE_CLICKED, new EventHandler<MouseEvent>() {
+                public void handle(MouseEvent event) {
                     Key k=l.getLayout().get(idx);
                     System.out.println("Key at "+idx+" "+k.getWidth()+"x"+k.getHeight());
+                    if (selectedKey!=null){
+                        selectedKey.borderProperty().setValue(new Border(new BorderStroke(Color.BLACK,BorderStrokeStyle.SOLID,new CornerRadii(5),new BorderWidths(1))));
+                        DropShadow ds = new DropShadow();
+                        ds.setOffsetY(3.0f);
+                        ds.setColor(Color.color(0.4f, 0.4f, 0.4f));
+                        selectedKey.setEffect(ds);
+                    }
+                    btn.setEffect(null);
+                    btn.borderProperty().setValue(new Border(new BorderStroke(Color.GREEN,BorderStrokeStyle.SOLID,new CornerRadii(5),new BorderWidths(2))));
+                    selectedKey=btn;
                 }
             });
             canvas.getChildren().add(btn);
@@ -141,7 +168,7 @@ public class Main extends Application {
         for (Key k : l.getLayout()) {
             idx++;
             if (k != null && !(k instanceof Key.NullKey)) {
-                Button b= (Button) canvas.getChildren().get(canvasIdx++);
+                Label b= (Label) canvas.getChildren().get(canvasIdx++);
                 b.setText(row+"/"+idx);
                 b.setFont(Font.font(12));
                 b.setMaxWidth(k.getWidth()*pixelWidth*scaleX);
