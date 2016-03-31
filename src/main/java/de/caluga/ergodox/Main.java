@@ -182,7 +182,7 @@ public class Main extends Application {
             }
         });
 
-        deleteLayer=new Button("delte layer");
+        deleteLayer=new Button("delete layer");
         deleteLayer.addEventHandler(ActionEvent.ACTION, new EventHandler<ActionEvent>() {
             public void handle(ActionEvent event) {
                 if (layers.indexOf(currentLayer)==0){
@@ -191,6 +191,7 @@ public class Main extends Application {
                     layers.remove(currentLayer);
                     layerCombo.getItems().remove(currentLayer.getName());
                     currentLayer=layers.get(0);
+                    layerCombo.getSelectionModel().select(0);
                     layout(canvas);
                 }
             }
