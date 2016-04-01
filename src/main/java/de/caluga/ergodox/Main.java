@@ -9,6 +9,7 @@ import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.geometry.Insets;
 import javafx.scene.Scene;
+import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.effect.DropShadow;
@@ -21,10 +22,14 @@ import javafx.scene.layout.Pane;
 import javafx.scene.layout.StackPane;
 import javafx.scene.text.Font;
 import javafx.scene.text.TextAlignment;
+import javafx.stage.DirectoryChooser;
+import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 
 /**
@@ -46,7 +51,7 @@ public class Main extends Application {
     private Label selectedGuiKey =null;
     private int selectedKeyIndexInLayout=0;
 
-    private List<ErgodoxLayoutLayer> layers = new ArrayList<ErgodoxLayoutLayer>();
+    private List<ErgodoxLayoutLayer> layers = new ArrayList<>();
 
     private Button setSourceDir;
     private Label sourceDirLabel;
@@ -65,6 +70,12 @@ public class Main extends Application {
 
     private ErgodoxLayoutLayer currentLayer;
     private Pane canvas;
+    private File qmkSourceDir;
+    private Label legendStandardKey;
+    private Label legendLayerSwitch;
+    private Label legendTempSwitch;
+    private Label legendMacroCall;
+    private Label legendModifierKey;
 
 
     public static void main(String[] args) {
@@ -116,15 +127,13 @@ public class Main extends Application {
         rightHalfOffset= initialWindowWidth /2;
         canvas.setPrefSize(initialWindowWidth, initialWindowHeight);
 
-        root.addEventHandler(KeyEvent.KEY_PRESSED, new EventHandler<KeyEvent>() {
-            public void handle(KeyEvent event) {
-                System.out.println("KEyEvent: "+event.getCode().impl_getCode()+" name: KC_"+event.getCode().getName());
-                if (selectedGuiKey !=null){
-                    currentLayer.getLayout().get(selectedKeyIndexInLayout).setValue(event.getCode().getName().toUpperCase());
-                    unmarkKey();
-                    selectedGuiKey =null;
-                    layout(canvas);
-                }
+        root.addEventHandler(KeyEvent.KEY_PRESSED, event -> {
+            System.out.println("KEyEvent: "+event.getCode().impl_getCode()+" name: KC_"+event.getCode().getName());
+            if (selectedGuiKey !=null){
+                currentLayer.getLayout().get(selectedKeyIndexInLayout).setValue(event.getCode().getName().toUpperCase());
+                unmarkKey();
+                selectedGuiKey =null;
+                layout(canvas);
             }
         });
         int idx=0;
@@ -143,70 +152,128 @@ public class Main extends Application {
             ds.setColor(Color.color(0.4f, 0.4f, 0.4f));
             label.setEffect(ds);
             final int i=idx;
-            label.addEventHandler(MouseEvent.MOUSE_CLICKED, new EventHandler<MouseEvent>() {
-                public void handle(MouseEvent event) {
-                    Key k= currentLayer.getLayout().get(i);
-                    selectedKeyIndexInLayout=i;
-                    System.out.println("Key at "+i+" "+k.getWidth()+"x"+k.getHeight());
-                    if (selectedGuiKey !=null){
-                        unmarkKey();
-                    }
-                    label.setEffect(null);
-                    label.borderProperty().setValue(new Border(new BorderStroke(Color.GREEN,BorderStrokeStyle.SOLID,new CornerRadii(5),new BorderWidths(2))));
-                    selectedGuiKey =label;
+            label.addEventHandler(MouseEvent.MOUSE_CLICKED, event -> {
+                Key k1 = currentLayer.getLayout().get(i);
+                selectedKeyIndexInLayout=i;
+                System.out.println("Key at "+i+" "+ k1.getWidth()+"x"+ k1.getHeight());
+                if (selectedGuiKey !=null){
+                    unmarkKey();
                 }
+                label.setEffect(null);
+                label.borderProperty().setValue(new Border(new BorderStroke(Color.GREEN,BorderStrokeStyle.SOLID,new CornerRadii(5),new BorderWidths(2))));
+                selectedGuiKey =label;
             });
             canvas.getChildren().add(label);
             idx++;
         }
 
         setSourceDir=new Button("Set qmk-SourceDir");
+        setSourceDir.addEventHandler(ActionEvent.ACTION, new EventHandler<ActionEvent>() {
+            @Override
+            public void handle(ActionEvent event) {
+                DirectoryChooser fc=new DirectoryChooser();
+                fc.setInitialDirectory(new File(System.getProperty("user.home")));
+                fc.setTitle("Choose qmk-source dir");
+                qmkSourceDir = fc.showDialog(primaryStage);
+                if (qmkSourceDir ==null) return;
+//                if (!qmkSourceDir.isDirectory()) {
+//                    Alert alert=new Alert(Alert.AlertType.ERROR);
+//                    alert.setTitle("No dir");
+//                    alert.setContentText("the selected file is not a directory!");
+//                    alert.show();
+//                    return;
+//                }
+                sourceDirLabel.setText(qmkSourceDir.getPath());
+
+            }
+        });
         openBtn=new Button("open");
+        openBtn.addEventHandler(ActionEvent.ACTION, event -> {
+            KeymapParser parser=new KeymapParser();
+            try {
+                DirectoryChooser fc=new DirectoryChooser();
+                if (qmkSourceDir==null) {
+                    fc.setInitialDirectory(new File(System.getProperty("user.home")));
+                } else {
+                    fc.setInitialDirectory(new File(qmkSourceDir.getPath()+"/keyboard/ergodox_ez/keymaps"));
+                }
+                fc.setTitle("Choose ergodox-keymap directory");
+                File selected=fc.showDialog(primaryStage);
+                if (selected==null) return;
+
+                Map<String, ErgodoxLayoutLayer> layouts= parser.parse(selected.getAbsolutePath()+"/keymap.c");
+                layerCombo.getItems().clear();
+                layers.clear();
+                for (String k: layouts.keySet()){
+                    layerCombo.getItems().add(0,k);
+                    layers.add(0,layouts.get(k));
+                }
+                currentLayer=layers.get(0);
+                layerCombo.getSelectionModel().select(0);
+                layout(canvas);
+            } catch (Exception e) {
+                //TODO: Implement Handling
+                throw new RuntimeException(e);
+            }
+        });
+
         saveBtn=new Button("save");
         sourceDirLabel=new Label("...");
         createKeymap=new Button("create");
 
-        macroCombo = new ComboBox<String>();
+        macroCombo = new ComboBox<>();
         macroCombo.getItems().add("Smiley :-D");
         macroCombo.getItems().add("Smiley :-(");
         macroCombo.getItems().add("CTRL_SHIFT/#");
 
-        layerCombo=new ComboBox<String>();
+        layerCombo= new ComboBox<>();
         layerCombo.getItems().add("Base");
         layerCombo.getSelectionModel().select(0);
-        layerCombo.addEventHandler(ActionEvent.ACTION, new EventHandler<ActionEvent>() {
-            public void handle(ActionEvent event) {
-                System.out.println("Selected!");
-                currentLayer=layers.get(layerCombo.getSelectionModel().getSelectedIndex());
-                layout(canvas);
-            }
+        layerCombo.addEventHandler(ActionEvent.ACTION, event -> {
+            System.out.println("Selected!");
+            if (layerCombo.getSelectionModel().getSelectedIndex()<0)return;
+            currentLayer=layers.get(layerCombo.getSelectionModel().getSelectedIndex());
+            layout(canvas);
         });
 
         deleteLayer=new Button("delete layer");
-        deleteLayer.addEventHandler(ActionEvent.ACTION, new EventHandler<ActionEvent>() {
-            public void handle(ActionEvent event) {
-                if (layers.indexOf(currentLayer)==0){
-                    System.err.println("Cannot delete base layer");
-                } else {
-                    layers.remove(currentLayer);
-                    layerCombo.getItems().remove(currentLayer.getName());
-                    currentLayer=layers.get(0);
-                    layerCombo.getSelectionModel().select(0);
-                    layout(canvas);
-                }
-            }
-        });
-        createLayer=new Button("add layer");
-        createLayer.addEventHandler(ActionEvent.ACTION, new EventHandler<ActionEvent>() {
-            public void handle(ActionEvent event) {
-                ErgodoxLayoutLayer l = new ErgodoxLayoutLayer("Layer " + layers.size());
-                layers.add(l);
-                currentLayer=l;
-                layerCombo.getItems().add(l.getName());
-                layerCombo.getSelectionModel().select(layerCombo.getItems().size()-1);
+        deleteLayer.addEventHandler(ActionEvent.ACTION, event -> {
+            if (layers.indexOf(currentLayer)==0){
+                System.err.println("Cannot delete base layer");
+            } else {
+                layers.remove(currentLayer);
+                layerCombo.getItems().remove(currentLayer.getName());
+                currentLayer=layers.get(0);
+                layerCombo.getSelectionModel().select(0);
                 layout(canvas);
             }
         });
+        createLayer=new Button("add layer");
+        createLayer.addEventHandler(ActionEvent.ACTION, event -> {
+            ErgodoxLayoutLayer l = new ErgodoxLayoutLayer("Layer " + layers.size());
+            layers.add(l);
+            currentLayer=l;
+            layerCombo.getItems().add(l.getName());
+            layerCombo.getSelectionModel().select(layerCombo.getItems().size()-1);
+            layout(canvas);
+        });
+
+        legendStandardKey=new Label("std key");
+        legendStandardKey.backgroundProperty().setValue(new Background(new BackgroundFill(Color.LIGHTGRAY, new CornerRadii(5), Insets.EMPTY)));
+        legendStandardKey.borderProperty().setValue(new Border(new BorderStroke(Color.BLACK,BorderStrokeStyle.SOLID,new CornerRadii(5),new BorderWidths(1))));
+        legendLayerSwitch=new Label("layer toggle");
+        legendLayerSwitch.backgroundProperty().setValue(new Background(new BackgroundFill(Color.LIGHTCORAL, new CornerRadii(5), Insets.EMPTY)));
+        legendLayerSwitch.borderProperty().setValue(new Border(new BorderStroke(Color.BLACK,BorderStrokeStyle.SOLID,new CornerRadii(5),new BorderWidths(1))));
+        legendTempSwitch=new Label("temp layer");
+        legendTempSwitch.backgroundProperty().setValue(new Background(new BackgroundFill(Color.LIGHTGREEN, new CornerRadii(5), Insets.EMPTY)));
+        legendTempSwitch.borderProperty().setValue(new Border(new BorderStroke(Color.BLACK,BorderStrokeStyle.SOLID,new CornerRadii(5),new BorderWidths(1))));
+        legendMacroCall=new Label("Macro call");
+        legendMacroCall.backgroundProperty().setValue(new Background(new BackgroundFill(Color.LIGHTYELLOW, new CornerRadii(5), Insets.EMPTY)));
+        legendMacroCall.borderProperty().setValue(new Border(new BorderStroke(Color.BLACK,BorderStrokeStyle.SOLID,new CornerRadii(5),new BorderWidths(1))));
+        legendModifierKey=new Label("Modifier");
+        legendModifierKey.backgroundProperty().setValue(new Background(new BackgroundFill(Color.LIGHTBLUE, new CornerRadii(5), Insets.EMPTY)));
+        legendModifierKey.borderProperty().setValue(new Border(new BorderStroke(Color.BLACK,BorderStrokeStyle.SOLID,new CornerRadii(5),new BorderWidths(1))));
+
 
         canvas.getChildren().add(macroCombo);
         canvas.getChildren().add(setSourceDir);
@@ -217,6 +284,11 @@ public class Main extends Application {
         canvas.getChildren().add(createLayer);
         canvas.getChildren().add(deleteLayer);
         canvas.getChildren().add(layerCombo);
+        canvas.getChildren().add(legendLayerSwitch);
+        canvas.getChildren().add(legendMacroCall);
+        canvas.getChildren().add(legendModifierKey);
+        canvas.getChildren().add(legendStandardKey);
+        canvas.getChildren().add(legendTempSwitch);
         layout(canvas);
 
         root.getChildren().add(canvas);
@@ -235,28 +307,24 @@ public class Main extends Application {
         primaryStage.setScene(scene);
         primaryStage.show();
 
-        scene.widthProperty().addListener(new ChangeListener<Number>() {
-            public void changed(ObservableValue<? extends Number> observable, Number oldValue, Number newValue) {
-                System.out.println("New width: "+newValue.toString());
-                currentWindowWidth=newValue.doubleValue();
-                if (currentWindowWidth> initialWindowWidth){
-                    scaleX =currentWindowWidth/(double) initialWindowWidth;
-                    rightHalfOffset= (int) (currentWindowWidth/2);
+        scene.widthProperty().addListener((observable, oldValue, newValue) -> {
+            System.out.println("New width: "+newValue.toString());
+            currentWindowWidth=newValue.doubleValue();
+            if (currentWindowWidth> initialWindowWidth){
+                scaleX =currentWindowWidth/(double) initialWindowWidth;
+                rightHalfOffset= (int) (currentWindowWidth/2);
 //                    System.out.println("Drawing with new scale of "+scaleX);
-                    layout(canvas);
+                layout(canvas);
 
-                }
             }
         });
-        scene.heightProperty().addListener(new ChangeListener<Number>() {
-            public void changed(ObservableValue<? extends Number> observable, Number oldValue, Number newValue) {
-                System.out.println("New height: "+newValue.toString());
-                currentWindowHeight=newValue.doubleValue();
-                if (currentWindowHeight> initialWindowHeight){
-                    scaleY  =currentWindowHeight/(double) initialWindowHeight;
-                    layout(canvas);
+        scene.heightProperty().addListener((observable, oldValue, newValue) -> {
+            System.out.println("New height: "+newValue.toString());
+            currentWindowHeight=newValue.doubleValue();
+            if (currentWindowHeight> initialWindowHeight){
+                scaleY  =currentWindowHeight/(double) initialWindowHeight;
+                layout(canvas);
 
-                }
             }
         });
     }
@@ -280,7 +348,25 @@ public class Main extends Application {
             idx++;
             if (k != null && !(k instanceof Key.NullKey)) {
                 Label b= (Label) canvas.getChildren().get(canvasIdx++);
-                b.setText(k.getValue()!=null?k.getValue():"");
+                String kval = k.getValue() != null ? k.getValue() : "";
+                if (kval.endsWith("SFT") || kval.endsWith("CTL") || kval.endsWith("ALT")|| kval.endsWith("GUI")) {
+                    b.backgroundProperty().setValue(new Background(new BackgroundFill(Color.LIGHTBLUE, new CornerRadii(5), Insets.EMPTY)));
+                }  else if (kval.startsWith("LT(")) {
+                    kval = kval.substring(3).replaceAll("\\)", "");
+                    b.backgroundProperty().setValue(new Background(new BackgroundFill(Color.LIGHTGREEN, new CornerRadii(5), Insets.EMPTY)));
+                } else if(kval.startsWith("M(")){
+                    kval=kval.substring(2).replaceAll("\\)","");
+                    b.backgroundProperty().setValue(new Background(new BackgroundFill(Color.LIGHTYELLOW, new CornerRadii(5), Insets.EMPTY)));
+                } else if(kval.startsWith("TG(")){
+                    kval=kval.substring(3).replaceAll("\\)","");
+                    b.backgroundProperty().setValue(new Background(new BackgroundFill(Color.LIGHTCORAL, new CornerRadii(5), Insets.EMPTY)));
+                 } else if(kval.contains("(")){
+                    b.backgroundProperty().setValue(new Background(new BackgroundFill(Color.LIGHTCYAN, new CornerRadii(5), Insets.EMPTY)));
+
+                } else {
+                    b.backgroundProperty().setValue(new Background(new BackgroundFill(Color.LIGHTGRAY, new CornerRadii(5), Insets.EMPTY)));
+                }
+                b.setText(kval);
                 b.setFont(Font.font(12));
                 b.setMaxWidth(k.getWidth()*pixelWidth*scaleX);
                 b.setPrefWidth(k.getWidth()*pixelWidth*scaleX);
@@ -289,7 +375,8 @@ public class Main extends Application {
                 b.setMaxHeight(k.getHeight()*pixelHeight*scaleY);
                 b.setPrefHeight(k.getHeight()*pixelHeight*scaleY);
                 b.setMinHeight(k.getHeight()*pixelHeight*scaleY);
-                b.relocate(x,y);
+
+                b.relocate(x+k.getxOffset()*scaleX,y+k.getyOffset()*scaleY);
 
 //                g.setFill(Color.DARKGRAY);
 //                g.fillRoundRect(x+4, y+4, k.getWidth() * pixelWidth, k.getHeight() * pixelHeight, 10, 10);
@@ -325,7 +412,7 @@ public class Main extends Application {
 
         macroCombo.relocate(currentWindowWidth/2,currentWindowHeight-100);
         setSourceDir.relocate(25,currentWindowHeight-30);
-        sourceDirLabel.relocate(250,currentWindowHeight-30);
+        sourceDirLabel.relocate(25,currentWindowHeight-60);
         createKeymap.relocate(currentWindowWidth-100,currentWindowHeight-30);
         saveBtn.relocate(currentWindowWidth/2,currentWindowHeight-60);
         openBtn.relocate(currentWindowWidth/2,currentWindowHeight-30);
@@ -333,5 +420,12 @@ public class Main extends Application {
         layerCombo.relocate(5,20);
         createLayer.relocate(150,5);
         deleteLayer.relocate(150,40);
+
+        legendLayerSwitch.relocate(currentWindowWidth-100,currentWindowHeight-100);
+        legendMacroCall.relocate(currentWindowWidth-100,currentWindowHeight-120);
+        legendModifierKey.relocate(currentWindowWidth-100,currentWindowHeight-140);
+        legendTempSwitch.relocate(currentWindowWidth-100,currentWindowHeight-160);
+        legendStandardKey.relocate(currentWindowWidth-100,currentWindowHeight-180);
+
     }
 }

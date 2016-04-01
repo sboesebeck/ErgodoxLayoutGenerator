@@ -28,6 +28,16 @@ public class ErgodoxLayoutLayer {
         this.name = name;
     }
 
+    public Key getKey(int idx) {
+        int i=0;
+        for (Key k: layout){
+            if (k instanceof Key.NullKey) continue;
+            if (i==idx)return k;
+             i++;
+        }
+        return null;
+    }
+
     public ErgodoxLayoutLayer(){
         //first row
         layout.add(Key.w2h1());
@@ -85,16 +95,6 @@ public class ErgodoxLayoutLayer {
         layout.add(Key.nw1h1());
         layout.add(Key.w1h1());
         layout.add(Key.w1h1());
-        //big thumb keys
-        layout.add(Key.nw1h1());
-        layout.add(Key.nw1h1());
-        layout.add(Key.nw1h1());
-        layout.add(Key.nw1h1());
-        layout.add(Key.nw1h1());
-
-        layout.add(Key.w1h2());
-        layout.add(Key.w1h2());
-        layout.add(Key.w1h1());
         //lowest keys
         layout.add(Key.nw1h1());
         layout.add(Key.nw1h1());
@@ -105,6 +105,17 @@ public class ErgodoxLayoutLayer {
         layout.add(Key.nw1h1());
         layout.add(Key.nw1h1());
         layout.add(Key.w1h1());
+        //big thumb keys
+        layout.add(Key.nw1h1());
+        layout.add(Key.nw1h1());
+        layout.add(Key.nw1h1());
+        layout.add(Key.nw1h1());
+        layout.add(Key.nw1h1());
+
+        layout.add(Key.w1h2().setyOffset(-25));
+        layout.add(Key.w1h2().setyOffset(-25));
+        layout.add(Key.w1h1());
+
 
         ///////////////////////////////////
         //1st row
@@ -164,13 +175,15 @@ public class ErgodoxLayoutLayer {
         //right
         layout.add(Key.w1h1());
         layout.add(Key.w1h1());
+
+        layout.add(Key.w1h1());
         //big thumbkeys
         //right
         layout.add(Key.w1h1());
-        layout.add(Key.w1h2());
-        layout.add(Key.w1h2());
+        layout.add(Key.w1h2().setyOffset(-25));
+        layout.add(Key.w1h2().setyOffset(-25));
         //lowest
-        layout.add(Key.w1h1());
+
 
         rowLength.add(7);
         rowLength.add(7);
@@ -181,8 +194,8 @@ public class ErgodoxLayoutLayer {
 
         //thumb blocks
         rowLength.add(2);
-        rowLength.add(3);
         rowLength.add(1);
+        rowLength.add(3);
     }
     public int keysOnHalf(){return 38;}
     public List<Key> getLayout() {

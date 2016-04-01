@@ -9,11 +9,32 @@ public class Key {
     private int width;
     private int height;
 
+    private int yOffset=0;
+    private int xOffset=0;
+
     private String value;
 
     public Key(int width, int height) {
         this.width = width;
         this.height = height;
+    }
+
+    public int getyOffset() {
+        return yOffset;
+    }
+
+    public Key setyOffset(int yOffset) {
+        this.yOffset = yOffset;
+        return this;
+    }
+
+    public int getxOffset() {
+        return xOffset;
+    }
+
+    public Key setxOffset(int xOffset) {
+        this.xOffset = xOffset;
+        return this;
     }
 
     public int getWidth() {
