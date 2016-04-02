@@ -20,4 +20,12 @@
             </plugin>
         </plugins>
     </build>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.apache.velocity</groupId>
+            <artifactId>velocity</artifactId>
+            <version>LATEST</version>
+        </dependency>
+    </dependencies>
 </project>

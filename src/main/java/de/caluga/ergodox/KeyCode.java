@@ -1,6 +1,6 @@
 package de.caluga.ergodox;
 
-public enum KeyCodes {
+public enum KeyCode {
     KC_NO,
     KC_ROLL_OVER,
     KC_POST_FAIL,
@@ -816,4 +816,5 @@ public enum KeyCodes {
     UK_QUOT,
     UK_TILD,
     UK_UACT,
+
 }
