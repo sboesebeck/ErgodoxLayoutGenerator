@@ -140,12 +140,7 @@ public class KeymapParser {
     }
 
     private void setKeyValue(int keyIndex, ErgodoxLayoutLayer layer, StringBuilder key) {
-        if(key.toString().equals("KC_TRNS")) {
-            layer.getKey(keyIndex).setValue("");
-        } else if (key.toString().startsWith("M(") || key.toString().startsWith("LT(") || !key.toString().contains("_") || key.toString().contains("(")) {
-            layer.getKey(keyIndex).setValue(key.toString());
-        } else {
-            layer.getKey(keyIndex).setValue(key.toString().substring(key.toString().lastIndexOf('_') + 1));
-        }
+
+        layer.getKey(keyIndex).setValue(key.toString());
     }
 }
