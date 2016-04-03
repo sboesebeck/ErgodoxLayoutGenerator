@@ -297,10 +297,33 @@ public class Main extends Application {
         ledDesc=new Label("LEDs:");
         led1=new Label("●");
         led1.setTextFill(Color.GRAY);
+        led1.addEventHandler(MouseEvent.MOUSE_CLICKED, new EventHandler<MouseEvent>() {
+            @Override
+            public void handle(MouseEvent event) {
+                currentLayer.setLed1(!currentLayer.isLed1());
+                layout(canvas);
+            }
+        });
+
         led2=new Label("●");
         led2.setTextFill(Color.GRAY);
+        led2.addEventHandler(MouseEvent.MOUSE_CLICKED, new EventHandler<MouseEvent>() {
+            @Override
+            public void handle(MouseEvent event) {
+                currentLayer.setLed2(!currentLayer.isLed2());
+                layout(canvas);
+            }
+        });
+
         led3=new Label("●");
         led3.setTextFill(Color.GRAY);
+        led3.addEventHandler(MouseEvent.MOUSE_CLICKED, new EventHandler<MouseEvent>() {
+            @Override
+            public void handle(MouseEvent event) {
+                currentLayer.setLed3(!currentLayer.isLed3());
+                layout(canvas);
+            }
+        });
 
 //        canvas.getChildren().add(macroCombo);
         canvas.getChildren().add(setSourceDir);
