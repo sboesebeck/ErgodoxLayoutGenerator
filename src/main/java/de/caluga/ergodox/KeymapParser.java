@@ -61,11 +61,14 @@ public class KeymapParser {
         }
 
         String keymapStart = "const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {";
+        String macroStart = "const macro_t *action_get_macro(keyrecord_t *record, uint8_t id, uint8_t opt)";
+        String ledStart = "void matrix_scan_user(void) {";
         idx = fileContent.indexOf(keymapStart) + keymapStart.length();
         State state = State.START;
         int brCount = 0;
         Map<String, String> layerDefByName = new HashMap<>();
         String layerName = "";
+        //parse layer definitions
         while (idx < fileContent.length()) {
             switch (state) {
                 case START:
@@ -105,6 +108,38 @@ public class KeymapParser {
             layer.setName(ln);
             ret.put(ln, layer);
         }
+
+
+        //parse LED settings for layers
+        idx=fileContent.indexOf(ledStart)+ledStart.length();
+        brCount =1;
+        int start=idx;
+        while (idx < fileContent.length()){
+            if (fileContent.charAt(idx)=='{') {
+                brCount++;
+            }
+            if (fileContent.charAt(idx)=='}'){
+                brCount--;
+                if (brCount==0)break;
+            }
+            idx++;
+        }
+
+        String ledMethod=fileContent.substring(start,idx);
+        for (String keyMap:layerDefByName.keySet()){
+            int caseStart=ledMethod.indexOf("case "+keyMap);
+            if(caseStart==-1){
+                System.out.println("No LED settings for layer "+keyMap);
+                continue;
+            }
+            int endCase=ledMethod.indexOf("break;",caseStart);
+            //between those indexes, the led settings will be
+            String c=ledMethod.substring(caseStart,endCase);
+            ret.get(keyMap).setLed1(c.contains("ergodox_right_led_1_on();"));
+            ret.get(keyMap).setLed2(c.contains("ergodox_right_led_2_on();"));
+            ret.get(keyMap).setLed3(c.contains("ergodox_right_led_3_on();"));
+        }
+
         return ret;
 //        System.out.println(fileContent.toString());
     }

@@ -88,6 +88,10 @@ public class Main extends Application {
     private Label legendHoldKey;
     private Button saveImgBtn;
     private String currentKeymap;
+    private Label ledDesc;
+    private Label led1;
+    private Label led2;
+    private Label led3;
 
 
     public static void main(String[] args) {
@@ -290,6 +294,14 @@ public class Main extends Application {
         legendHoldKey = new Label("Type Key \n hold key");
         layoutLabel(legendHoldKey,Color.LIGHTSKYBLUE);
 
+        ledDesc=new Label("LEDs:");
+        led1=new Label("●");
+        led1.setTextFill(Color.GRAY);
+        led2=new Label("●");
+        led2.setTextFill(Color.GRAY);
+        led3=new Label("●");
+        led3.setTextFill(Color.GRAY);
+
 //        canvas.getChildren().add(macroCombo);
         canvas.getChildren().add(setSourceDir);
         canvas.getChildren().add(openBtn);
@@ -307,6 +319,10 @@ public class Main extends Application {
         canvas.getChildren().add(legendTempSwitch);
         canvas.getChildren().add(legendCombination);
         canvas.getChildren().add(legendHoldKey);
+        canvas.getChildren().add(ledDesc);
+        canvas.getChildren().add(led1);
+        canvas.getChildren().add(led2);
+        canvas.getChildren().add(led3);
         layout(canvas);
 
         root.getChildren().add(canvas);
@@ -563,6 +579,17 @@ public class Main extends Application {
         legendStandardKey.relocate(currentWindowWidth - 100, currentWindowHeight - 140);
 
         legendHoldKey.relocate(currentWindowWidth-200,currentWindowHeight-100);
+
+        ledDesc.relocate(currentWindowWidth-200,50);
+        led1.relocate(currentWindowWidth-150,45);
+        led2.relocate(currentWindowWidth-135,45);
+        led3.relocate(currentWindowWidth-120,45);
+        led1.setFont(Font.font(24));
+        led2.setFont(Font.font(24));
+        led3.setFont(Font.font(24));
+        if (currentLayer.isLed1()) led1.setTextFill(Color.web("#FF0000")); else led1.setTextFill(Color.GRAY);
+        if (currentLayer.isLed2()) led2.setTextFill(Color.web("#00FF00")); else led2.setTextFill(Color.GRAY);
+        if (currentLayer.isLed3()) led3.setTextFill(Color.web("#8080FF")); else led3.setTextFill(Color.GRAY);
 
     }
 

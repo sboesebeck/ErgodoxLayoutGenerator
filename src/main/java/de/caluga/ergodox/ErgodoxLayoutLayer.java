@@ -12,12 +12,39 @@ public class ErgodoxLayoutLayer {
 
     private List<Key> layout=new ArrayList();
     private List<Integer> rowLength=new ArrayList<Integer>();
+    private boolean led1;
+    private boolean led2;
+    private boolean led3;
 
     private String name;
 
     public ErgodoxLayoutLayer(String name) {
         this();
         this.name = name;
+    }
+
+    public boolean isLed1() {
+        return led1;
+    }
+
+    public void setLed1(boolean led1) {
+        this.led1 = led1;
+    }
+
+    public boolean isLed2() {
+        return led2;
+    }
+
+    public void setLed2(boolean led2) {
+        this.led2 = led2;
+    }
+
+    public boolean isLed3() {
+        return led3;
+    }
+
+    public void setLed3(boolean led3) {
+        this.led3 = led3;
     }
 
     public String getName() {
