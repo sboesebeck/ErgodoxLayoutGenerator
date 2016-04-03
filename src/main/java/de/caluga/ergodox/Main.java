@@ -573,46 +573,61 @@ public class Main extends Application {
         } else if (kval.startsWith("TG(")) {
             ret = kval.substring(3).replaceAll("\\)", "");
         } else if (kval.startsWith("ALL_T(")) {
-            ret = kval.substring(6).replaceAll("\\)", "") + "\nHyper";
+            String s = kval.substring(6).replaceAll("\\)", "");
+            s=getKeyDisplayName(s.substring(s.lastIndexOf('_')+1));
+            ret = s + "\nHyper";
         } else if (kval.startsWith("MEH_T(")) {
-            ret = kval.substring(6).replaceAll("\\)", "") + "\nMeh";
+            String s = kval.substring(6).replaceAll("\\)", "");
+            s=getKeyDisplayName(s.substring(s.lastIndexOf('_')+1));
+            ret = s + "\nMeh";
         } else if (kval.startsWith("ALT_T(")) {
             String s = kval.substring(6).replaceAll("\\)", "");
+            s=getKeyDisplayName(s.substring(s.lastIndexOf('_')+1));
             ret = s + "\nALT";
         } else if (kval.startsWith("CTL_T(")) {
             String s = kval.substring(6).replaceAll("\\)", "");
+            s=getKeyDisplayName(s.substring(s.lastIndexOf('_')+1));
             ret = s + "\nCtrl";
         } else if (kval.startsWith("GUI_T(")) {
             String s = kval.substring(6).replaceAll("\\)", "");
+            s=getKeyDisplayName(s.substring(s.lastIndexOf('_')+1));
             ret = s + "\nCMD";
         } else if (kval.startsWith("LT(")) {
             String s = kval.substring(3).replaceAll("\\)", "");
             String lt[] = s.split(",");
             String layer = lt[0];
             String key = lt[1];
-            ret = key.substring(key.lastIndexOf('_') + 1) + "\n" + layer;
+            ret = getKeyDisplayName(key.substring(key.lastIndexOf('_') + 1)) + "\n" + layer;
         } else if (kval.startsWith("LGUI(")) {
             String s = kval.substring(5).replaceAll("\\)", "");
-            ret = "CMD+" + s.substring(s.lastIndexOf('_') + 1);
+            ret = "CMD+" + getKeyDisplayName(s.substring(s.lastIndexOf('_') + 1));
         } else if (kval.startsWith("LCTL(")) {
             String s = kval.substring(5).replaceAll("\\)", "");
-            ret = "Ctrl+" + s.substring(s.lastIndexOf('_') + 1);
+            ret = "Ctrl+" + getKeyDisplayName(s.substring(s.lastIndexOf('_') + 1));
         } else if (kval.startsWith("LALT(")) {
             String s = kval.substring(5).replaceAll("\\)", "");
-            ret = "ALT+" + s.substring(s.lastIndexOf('_') + 1);
+            ret = "ALT+" + getKeyDisplayName(s.substring(s.lastIndexOf('_') + 1));
         } else if (kval.startsWith("LSFT(")) {
             String s = kval.substring(5).replaceAll("\\)", "");
-            ret = "Shift+" + s.substring(s.lastIndexOf('_') + 1);
+            ret = "Shift+" + getKeyDisplayName(s.substring(s.lastIndexOf('_') + 1));
         } else if (kval.startsWith("M(") || !kval.contains("_") || kval.contains("(")) {
             ret = kval;
         } else {
-            ret = kval.substring(kval.lastIndexOf('_') + 1);
+            ret = getKeyDisplayName(kval.substring(kval.lastIndexOf('_') + 1));
         }
 
+        return ret;
+    }
+
+    private String getKeyDisplayName(String ret) {
         ret = ret.replaceAll("LSFT", "Shift")
                 .replaceAll("RSFT","Shift")
                 .replaceAll("KC_NO", "None")
                 .replaceAll("KC_", "");
+        ret=ret.replaceAll("^AE","Ä");
+        ret=ret.replaceAll("^OE","Ö");
+        ret=ret.replaceAll("^UE","Ü");
+        ret=ret.replaceAll("^SS","ß");
         return ret;
     }
 }
