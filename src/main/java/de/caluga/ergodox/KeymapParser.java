@@ -18,20 +18,13 @@ public class KeymapParser {
 
     private StringBuilder fileContent;
 
-    private enum State {
-        START,
-        KEYMAP,
-        END,
-        MACRO,
-    }
-
-
-    public Map<String, ErgodoxLayoutLayer> parse(String file) throws Exception {
+    public ErgodoxLayout parse(String file) throws Exception {
         BufferedReader br = new BufferedReader(new FileReader(file));
-        String l = null;
+        String l;
         fileContent = new StringBuilder();
         while ((l = br.readLine()) != null) {
-            fileContent.append(l + "\n");
+            fileContent.append(l);
+            fileContent.append("\n");
         }
 
         int idx = 0;
@@ -139,8 +132,9 @@ public class KeymapParser {
             ret.get(keyMap).setLed2(c.contains("ergodox_right_led_2_on();"));
             ret.get(keyMap).setLed3(c.contains("ergodox_right_led_3_on();"));
         }
-
-        return ret;
+        ErgodoxLayout layout = new ErgodoxLayout();
+        layout.setLayers(ret);
+        return layout;
 //        System.out.println(fileContent.toString());
     }
 
@@ -177,5 +171,12 @@ public class KeymapParser {
     private void setKeyValue(int keyIndex, ErgodoxLayoutLayer layer, StringBuilder key) {
 
         layer.getKey(keyIndex).setValue(key.toString());
+    }
+
+    private enum State {
+        START,
+        KEYMAP,
+        END,
+        MACRO,
     }
 }
