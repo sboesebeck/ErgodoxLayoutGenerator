@@ -31,10 +31,6 @@ public class MacroAction {
         this.wait = wait;
     }
 
-    public void setAction(Action action) {
-        this.action = action;
-    }
-
     public Action getAction() {
         return action;
     }
