@@ -10,9 +10,10 @@ import de.caluga.ergodox.KeyCode;
  * TODO: Add documentation here
  */
 public class MacroAction {
+
     private KeyCode code;
     private int wait;
-    private boolean down;
+    private Action action;
 
     public KeyCode getCode() {
         return code;
@@ -30,11 +31,19 @@ public class MacroAction {
         this.wait = wait;
     }
 
-    public boolean isDown() {
-        return down;
+    public void setAction(Action action) {
+        this.action = action;
     }
 
-    public void setDown(boolean down) {
-        this.down = down;
+    public Action getAction() {
+        return action;
+    }
+
+    public void setAction(Action action) {
+        this.action = action;
+    }
+
+    public enum Action {
+        UP, DOWN, WAIT, TYPE,
     }
 }

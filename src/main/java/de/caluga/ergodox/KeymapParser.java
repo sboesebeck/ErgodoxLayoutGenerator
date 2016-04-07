@@ -56,6 +56,10 @@
 
 package de.caluga.ergodox;
 
+import de.caluga.ergodox.macros.LTMacro;
+import de.caluga.ergodox.macros.MacroAction;
+import de.caluga.ergodox.macros.TypeMacro;
+
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.util.HashMap;
@@ -204,9 +208,37 @@ public class KeymapParser {
             Matcher mLayerToggleMacro = layerToggleMacro.matcher(macroContent);
             Matcher mLTTypeMacro = ltTypeMacro.matcher(macroContent);
             if (mTypingMacro.matches()) {
-                System.out.println("Regular typing macro: " + mTypingMacro.group(1));
+                String typing = mTypingMacro.group(1);
+                System.out.println("Regular typing macro: " + typing);
+                TypeMacro tm = new TypeMacro();
+                for (String token : typing.split(",")) {
+                    MacroAction a = new MacroAction();
+                    if (token.startsWith("D(")) {
+                        a.setAction(MacroAction.Action.DOWN);
+                        a.setCode(KeyCode.valueOf("KC_" + token.substring(2, token.length() - 1)));
+
+                    } else if (token.startsWith("U(")) {
+                        a.setAction(MacroAction.Action.UP);
+                        a.setCode(KeyCode.valueOf("KC_" + token.substring(2, token.length() - 1)));
+
+                    } else if (token.startsWith("T(")) {
+                        a.setAction(MacroAction.Action.TYPE);
+                        a.setCode(KeyCode.valueOf("KC_" + token.substring(2, token.length() - 1)));
+                    } else if (token.startsWith("W(")) {
+                        a.setAction(MacroAction.Action.WAIT);
+                        a.setWait(Integer.parseInt(token.substring(2, token.length() - 1)));
+                    } else {
+                        System.err.println("Cannot handle this macro action: " + token);
+                        continue;
+                    }
+                    tm.getActions().add(a);
+                }
+                System.out.println("Got Macro: " + tm.toString());
+
             } else if (mLTTypeMacro.matches()) {
                 System.out.println("Got LTType Macro; onPress: " + mLTTypeMacro.group(1) + "  timeout: " + mLTTypeMacro.group(2) + "  release: " + mLTTypeMacro.group(3) + "  type: " + mLTTypeMacro.group(4));
+                LTMacro lt = new LTMacro();
+
             } else if (mLayerToggleMacro.matches()) {
                 System.out.println("Layer toggle macro: Layer " + mLayerToggleMacro.group(1));
             } else {

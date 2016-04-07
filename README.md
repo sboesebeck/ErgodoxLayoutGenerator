@@ -22,8 +22,8 @@ or toggle a certain layer.
  ## Documentation
 
  When starting the program (which right now can only be done from an IDE), it will show an empty ErgoDox (or ErgoDox-EZ in that respect)
- Layout. In the current version, you can set any key you see to a key you can type.
- When you click on a key representation, it will be marked. If you now type a key on your keyboard, this key will be recorded there.
+ Layout. In the current version, you can set any key you see to a key you can action.
+ When you click on a key representation, it will be marked. If you now action a key on your keyboard, this key will be recorded there.
 
  please keep in mind that this is very erarly development stage, so right now this information cannot be stored or otherwise use.
 
