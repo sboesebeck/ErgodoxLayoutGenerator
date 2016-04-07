@@ -61,6 +61,8 @@ import java.io.FileReader;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 
 /**
@@ -75,7 +77,7 @@ public class KeymapParser {
     private StringBuilder fileContent;
 
 
-    public Map<String, ErgodoxLayoutLayer> parse(String file) throws Exception {
+    public ErgodoxLayout parse(String file) throws Exception {
         BufferedReader br = new BufferedReader(new FileReader(file));
         String l;
         fileContent = new StringBuilder();
@@ -186,13 +188,31 @@ public class KeymapParser {
         start = idx;
         idx = getTextBetweenBraces(idx, brCount);
         String macros = fileContent.substring(start, idx);
-
+        Pattern typeMacro = Pattern.compile("if\\(record->event.pressed\\)\\{returnMACRO\\(([^;]+),END\\);}");
+        Pattern layerToggleMacro = Pattern.compile("if\\(record->event.pressed\\)\\{layer_state\\^=\\(1<<([^ ]+)\\);layer_state&=\\(1<<[^ ]+\\);}");
+        Pattern ltTypeMacro = Pattern.compile("if\\(record->event.pressed\\)\\{start=timer_read\\(\\);returnMACRO\\(([^;]+),END\\);\\}else\\{if\\(timer_elapsed\\(start\\)>([0-9]+)\\)\\{returnMACRO\\(([^;]+),END\\);\\}else\\{returnMACRO\\(([^;]+),END\\);\\}\\}");
         while (macros.length() > 0) {
             idx = macros.indexOf("case ");
             if (idx == -1) break;
             idx += 5;
             String macroName = macros.substring(idx, macros.indexOf(":", idx));
             System.out.println("Found macro " + macroName);
+
+            String macroContent = macros.substring(macros.indexOf(":", idx) + 1, macros.indexOf("break;", idx));
+            macroContent = macroContent.replaceAll("[\n\t ]", "");
+            Matcher mTypingMacro = typeMacro.matcher(macroContent);
+            Matcher mLayerToggleMacro = layerToggleMacro.matcher(macroContent);
+            Matcher mLTTypeMacro = ltTypeMacro.matcher(macroContent);
+            if (mTypingMacro.matches()) {
+                System.out.println("Regular typing macro: " + mTypingMacro.group(1));
+            } else if (mLTTypeMacro.matches()) {
+                System.out.println("Got LTType Macro; onPress: " + mLTTypeMacro.group(1) + "  timeout: " + mLTTypeMacro.group(2) + "  release: " + mLTTypeMacro.group(3) + "  type: " + mLTTypeMacro.group(4));
+            } else if (mLayerToggleMacro.matches()) {
+                System.out.println("Layer toggle macro: Layer " + mLayerToggleMacro.group(1));
+            } else {
+                System.out.println("Unknown custom macro?");
+                System.out.println(macroContent);
+            }
 
             macros = macros.substring(macros.indexOf("break;", idx));
             //Does not work if you have nested case statements!!!!!

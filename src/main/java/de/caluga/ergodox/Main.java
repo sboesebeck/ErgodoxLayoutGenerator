@@ -89,7 +89,6 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Properties;
 
 
@@ -510,12 +509,12 @@ public class Main extends Application {
             File selected = fc.showDialog(primaryStage);
             if (selected == null) return;
 
-            Map<String, ErgodoxLayoutLayer> layouts = parser.parse(selected.getAbsolutePath() + "/keymap.c");
+            ErgodoxLayout layout = parser.parse(selected.getAbsolutePath() + "/keymap.c");
             layerCombo.getItems().clear();
             layers.clear();
-            for (String k : layouts.keySet()) {
+            for (String k : layout.getLayers().keySet()) {
                 layerCombo.getItems().add(0, k);
-                layers.add(0, layouts.get(k));
+                layers.add(0, layout.getLayers().get(k));
             }
             currentLayer = layers.get(0);
             layerCombo.getSelectionModel().select(0);
