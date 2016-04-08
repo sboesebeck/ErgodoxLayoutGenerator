@@ -60,11 +60,13 @@ package de.caluga.ergodox; /**
 
 import de.caluga.ergodox.macros.Macro;
 import javafx.application.Application;
+import javafx.application.Platform;
 import javafx.embed.swing.SwingFXUtils;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.SnapshotParameters;
 import javafx.scene.control.*;
@@ -81,6 +83,7 @@ import javafx.scene.text.TextAlignment;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
+import org.apache.commons.collections.map.HashedMap;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
@@ -88,9 +91,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Properties;
+import java.util.*;
 
 
 /**
@@ -195,7 +196,6 @@ public class Main extends Application {
         currentLayer = layers.get(0); //base
 
 
-
         canvas = new Pane();
         canvas.setStyle("-fx-background-color: white;");
         initialWindowWidth = 800;
@@ -263,7 +263,19 @@ public class Main extends Application {
                     selectedGuiKey = label;
                 }
             });
-            label.setContextMenu(new ContextMenu(clearMI, new MenuItem("assign macro"), new MenuItem("assign LT"), new MenuItem("assign someting else")));
+            MenuItem assignKey = new MenuItem("Assign key");
+            assignKey.addEventHandler(ActionEvent.ACTION, new EventHandler<ActionEvent>() {
+                @Override
+                public void handle(ActionEvent event) {
+                    currentLayer.getLayout().get(i).setValue("KC_TRNS");
+                    unmarkKey();
+                    selectedGuiKey = null;
+                    layout(canvas);
+                    doAssignKey(currentLayer.getLayout().get(i));
+                    layout(canvas);
+                }
+            });
+            label.setContextMenu(new ContextMenu(clearMI, assignKey, new MenuItem("assign macro"), new MenuItem("assign LT"), new MenuItem("assign someting else")));
             label.addEventHandler(MouseEvent.MOUSE_CLICKED, event -> {
                 event.consume();
                 if (!event.getButton().equals(MouseButton.PRIMARY)) return;
@@ -309,7 +321,7 @@ public class Main extends Application {
         });
 
         saveBtn = new Button("save");
-        saveImgBtn=new Button("Save img");
+        saveImgBtn = new Button("Save img");
         saveImgBtn.addEventHandler(ActionEvent.ACTION, new EventHandler<ActionEvent>() {
             @Override
             public void handle(ActionEvent event) {
@@ -369,12 +381,12 @@ public class Main extends Application {
         legendCombination = new Label("Combinations");
         layoutLabel(legendCombination, Color.LIGHTCYAN);
         legendHoldKey = new Label("Type Key \n hold key");
-        layoutLabel(legendHoldKey,Color.LIGHTSKYBLUE);
+        layoutLabel(legendHoldKey, Color.LIGHTSKYBLUE);
 
         keyDescription = new Label("");
 
-        ledDesc=new Label("LEDs:");
-        led1=new Label("●");
+        ledDesc = new Label("LEDs:");
+        led1 = new Label("●");
         led1.setTextFill(Color.GRAY);
         led1.addEventHandler(MouseEvent.MOUSE_CLICKED, new EventHandler<MouseEvent>() {
             @Override
@@ -384,7 +396,7 @@ public class Main extends Application {
             }
         });
 
-        led2=new Label("●");
+        led2 = new Label("●");
         led2.setTextFill(Color.GRAY);
         led2.addEventHandler(MouseEvent.MOUSE_CLICKED, new EventHandler<MouseEvent>() {
             @Override
@@ -394,7 +406,7 @@ public class Main extends Application {
             }
         });
 
-        led3=new Label("●");
+        led3 = new Label("●");
         led3.setTextFill(Color.GRAY);
         led3.addEventHandler(MouseEvent.MOUSE_CLICKED, new EventHandler<MouseEvent>() {
             @Override
@@ -470,6 +482,115 @@ public class Main extends Application {
 
     }
 
+    private void doAssignKey(Key k) {
+        List<String> choices = new ArrayList<>();
+        for (ErgodoxKeyCode c : ErgodoxKeyCode.values()) {
+            choices.add(c.name());
+        }
+        String def = k.getValue();
+        if (def.contains("(")) {
+            def = "KC_TRANS";
+        }
+
+        //describing choices
+        Map<String, String> prefixDescriptionByPrefix = new HashedMap();
+        prefixDescriptionByPrefix.put("ALL", "show all keys");
+        prefixDescriptionByPrefix.put("KC", "Default keys / US layout");
+        prefixDescriptionByPrefix.put("BL", "BL-Layout");
+        prefixDescriptionByPrefix.put("BP", "BP-Layout");
+        prefixDescriptionByPrefix.put("DE", "German keyboard layout");
+        prefixDescriptionByPrefix.put("DE_OSX", "German keyboard layout for Mac OSX");
+        prefixDescriptionByPrefix.put("DV", "DVORAK");
+        prefixDescriptionByPrefix.put("ES", "Spanish layout");
+        prefixDescriptionByPrefix.put("FR", "French layout");
+        prefixDescriptionByPrefix.put("NEO", "German NEO2 layout");
+        prefixDescriptionByPrefix.put("NO", "Norwegian layout");
+        prefixDescriptionByPrefix.put("UK", "United Kingdom");
+
+        // Create the custom dialog.
+        Dialog<ButtonType> dialog = new Dialog<>();
+        dialog.setTitle("Choose Key");
+        dialog.setHeaderText("Key from available keys");
+
+        ButtonType assignButtonType = new ButtonType("Assign", ButtonBar.ButtonData.OK_DONE);
+        dialog.getDialogPane().getButtonTypes().addAll(assignButtonType, ButtonType.CANCEL);
+
+        GridPane grid = new GridPane();
+        grid.setHgap(10);
+        grid.setVgap(10);
+        grid.setPadding(new Insets(20, 150, 10, 10));
+
+        ComboBox<String> bx = new ComboBox<>();
+        for (String prfx : prefixDescriptionByPrefix.keySet()) {
+            bx.getItems().add(prfx + " - " + prefixDescriptionByPrefix.get(prfx));
+        }
+
+        ComboBox<String> bx2 = new ComboBox<>();
+        bx2.setEditable(true);
+        bx2.getItems().addAll(choices);
+        ComboBoxAutocompleter ac = new ComboBoxAutocompleter(bx2);
+        String lastKey = applicationSettings.getProperty("last_key_prefix");
+        if (lastKey != null) {
+            bx.getSelectionModel().select(lastKey);
+            bx2.getEditor().setText(((String) lastKey).substring(0, lastKey.indexOf(" - ")));
+            Platform.runLater(() -> {
+                ac.updateSelection();
+            });
+        } else {
+            bx.getSelectionModel().select("ALL - " + prefixDescriptionByPrefix.get("ALL"));
+        }
+
+        bx.addEventHandler(ActionEvent.ACTION, event -> {
+            String selectedItem = bx.getSelectionModel().getSelectedItem();
+            if (selectedItem.startsWith("ALL - ")) {
+                bx2.getEditor().setText("");
+            } else {
+                bx2.getEditor().setText(selectedItem.substring(0, selectedItem.indexOf(" - ")));
+            }
+            ac.updateSelection();
+            Node assignButton = dialog.getDialogPane().lookupButton(assignButtonType);
+            assignButton.setDisable(true);
+            applicationSettings.setProperty("last_key_prefix", selectedItem);
+            saveConfig();
+        });
+
+        bx2.addEventHandler(ActionEvent.ACTION, event -> {
+            Node assignButton = dialog.getDialogPane().lookupButton(assignButtonType);
+            assignButton.setDisable(false);
+
+        });
+        bx2.addEventHandler(KeyEvent.KEY_PRESSED, event -> {
+            if (event.getCode().equals("ENTER")) {
+                k.setValue(bx2.getSelectionModel().getSelectedItem());
+                dialog.close();
+            }
+        });
+        grid.add(new Label("Prefix:"), 0, 0);
+        grid.add(bx, 1, 0);
+        grid.add(new Label("Key:"), 0, 1);
+        grid.add(bx2, 1, 1);
+
+// Enable/Disable login button depending on whether a username was entered.
+        Node assignButton = dialog.getDialogPane().lookupButton(assignButtonType);
+        assignButton.setDisable(true);
+
+
+        dialog.getDialogPane().setContent(grid);
+
+// Request focus on the username field by default.
+        Platform.runLater(() -> bx2.requestFocus());
+
+
+        Optional<ButtonType> result = dialog.showAndWait();
+
+        result.ifPresent(selectedKeyCode -> {
+            //Got selection ok
+            k.setValue(bx2.getSelectionModel().getSelectedItem());
+        });
+
+
+    }
+
     private void markLabel(Label label) {
         label.setEffect(null);
         label.borderProperty().setValue(new Border(new BorderStroke(Color.GREEN, BorderStrokeStyle.SOLID, new CornerRadii(5), new BorderWidths(2))));
@@ -478,25 +599,25 @@ public class Main extends Application {
     }
 
     public void saveAsPng() {
-        FileChooser fc=new FileChooser();
-        fc.setInitialDirectory(new File(qmkSourceDir.getPath()+"/keyboard/ergodox_ez/keymaps/"+currentKeymap));
-        fc.setInitialFileName(currentKeymap+"_highres.png");
-        File file=fc.showSaveDialog(null);
-        if (file==null)return;
+        FileChooser fc = new FileChooser();
+        fc.setInitialDirectory(new File(qmkSourceDir.getPath() + "/keyboard/ergodox_ez/keymaps/" + currentKeymap));
+        fc.setInitialFileName(currentKeymap + "_highres.png");
+        File file = fc.showSaveDialog(null);
+        if (file == null) return;
 
         unmarkKey();
         layerCombo.getSelectionModel().select(0);
         WritableImage image = canvas.snapshot(new SnapshotParameters(), null);
 
         int snapshowHeight = (int) (image.getHeight() - 65);
-        BufferedImage img=new BufferedImage((int)image.getWidth(), snapshowHeight *layerCombo.getItems().size(),BufferedImage.TYPE_INT_RGB);
+        BufferedImage img = new BufferedImage((int) image.getWidth(), snapshowHeight * layerCombo.getItems().size(), BufferedImage.TYPE_INT_RGB);
         createLayer.setVisible(false);
         deleteLayer.setVisible(false);
         keyDescription.setVisible(false);
-        for (int i=0;i<layerCombo.getItems().size();i++){
+        for (int i = 0; i < layerCombo.getItems().size(); i++) {
             layerCombo.getSelectionModel().select(i);
             image = canvas.snapshot(new SnapshotParameters(), null);
-            img.getGraphics().drawImage(SwingFXUtils.fromFXImage(image, null),0,i*snapshowHeight,null);
+            img.getGraphics().drawImage(SwingFXUtils.fromFXImage(image, null), 0, i * snapshowHeight, null);
         }
 
 
@@ -698,7 +819,7 @@ public class Main extends Application {
         sourceDirLabel.relocate(25, currentWindowHeight - 60);
         createKeymap.relocate(currentWindowWidth - 100, currentWindowHeight - 30);
         saveBtn.relocate(currentWindowWidth / 2, currentWindowHeight - 60);
-        saveImgBtn.relocate(currentWindowWidth / 2+50, currentWindowHeight - 60);
+        saveImgBtn.relocate(currentWindowWidth / 2 + 50, currentWindowHeight - 60);
         openBtn.relocate(currentWindowWidth / 2, currentWindowHeight - 30);
         reopenBtn.relocate(currentWindowWidth / 2 + 50, currentWindowHeight - 30);
 
@@ -713,22 +834,26 @@ public class Main extends Application {
         legendCombination.relocate(currentWindowWidth - 100, currentWindowHeight - 120);
         legendStandardKey.relocate(currentWindowWidth - 100, currentWindowHeight - 140);
 
-        legendHoldKey.relocate(currentWindowWidth-200,currentWindowHeight-100);
+        legendHoldKey.relocate(currentWindowWidth - 200, currentWindowHeight - 100);
 
-        ledDesc.relocate(currentWindowWidth-200,50);
-        led1.relocate(currentWindowWidth-150,45);
-        led2.relocate(currentWindowWidth-135,45);
-        led3.relocate(currentWindowWidth-120,45);
+        ledDesc.relocate(currentWindowWidth - 200, 50);
+        led1.relocate(currentWindowWidth - 150, 45);
+        led2.relocate(currentWindowWidth - 135, 45);
+        led3.relocate(currentWindowWidth - 120, 45);
         led1.setFont(Font.font(24));
         led2.setFont(Font.font(24));
         led3.setFont(Font.font(24));
-        if (currentLayer.isLed1()) led1.setTextFill(Color.web("#FF0000")); else led1.setTextFill(Color.GRAY);
-        if (currentLayer.isLed2()) led2.setTextFill(Color.web("#00FF00")); else led2.setTextFill(Color.GRAY);
-        if (currentLayer.isLed3()) led3.setTextFill(Color.web("#8080FF")); else led3.setTextFill(Color.GRAY);
+        if (currentLayer.isLed1()) led1.setTextFill(Color.web("#FF0000"));
+        else led1.setTextFill(Color.GRAY);
+        if (currentLayer.isLed2()) led2.setTextFill(Color.web("#00FF00"));
+        else led2.setTextFill(Color.GRAY);
+        if (currentLayer.isLed3()) led3.setTextFill(Color.web("#8080FF"));
+        else led3.setTextFill(Color.GRAY);
 
         keyDescription.relocate(currentWindowWidth / 2 - 100, currentWindowHeight - 150);
 
     }
+
 
     private String getKeyDescription(String kval) {
         if (kval == null) return "";
@@ -739,42 +864,42 @@ public class Main extends Application {
             ret = "Toggle layer " + kval.substring(3).replaceAll("\\)", "");
         } else if (kval.startsWith("ALL_T(")) {
             String s = kval.substring(6).replaceAll("\\)", "");
-            s = getKeyDisplayName(s.substring(s.lastIndexOf('_') + 1));
+            s = getKeyDisplayName(s);
             ret = "Type key: " + s + "\nHolding key: Hyper";
         } else if (kval.startsWith("MEH_T(")) {
             String s = kval.substring(6).replaceAll("\\)", "");
-            s = getKeyDisplayName(s.substring(s.lastIndexOf('_') + 1));
+            s = getKeyDisplayName(s);
             ret = "Type key: " + s + "\nHolding key: Meh";
         } else if (kval.startsWith("ALT_T(")) {
             String s = kval.substring(6).replaceAll("\\)", "");
-            s = getKeyDisplayName(s.substring(s.lastIndexOf('_') + 1));
+            s = getKeyDisplayName(s);
             ret = "Type key: " + s + "\nHoliding key: ALT";
         } else if (kval.startsWith("CTL_T(")) {
             String s = kval.substring(6).replaceAll("\\)", "");
-            s = getKeyDisplayName(s.substring(s.lastIndexOf('_') + 1));
+            s = getKeyDisplayName(s);
             ret = "type key: " + s + "\nHolding key: Ctrl";
         } else if (kval.startsWith("GUI_T(")) {
             String s = kval.substring(6).replaceAll("\\)", "");
-            s = getKeyDisplayName(s.substring(s.lastIndexOf('_') + 1));
+            s = getKeyDisplayName(s);
             ret = "Type key: " + s + "\nHolding key: CMD";
         } else if (kval.startsWith("LT(")) {
             String s = kval.substring(3).replaceAll("\\)", "");
             String lt[] = s.split(",");
             String layer = lt[0];
             String key = lt[1];
-            ret = "Type key: " + getKeyDisplayName(key.substring(key.lastIndexOf('_') + 1)) + "\nLayer " + layer + " when hold";
+            ret = "Type key: " + getKeyDisplayName(key) + "\nLayer " + layer + " when hold";
         } else if (kval.startsWith("LGUI(")) {
             String s = kval.substring(5).replaceAll("\\)", "");
-            ret = "Holds both CMD and " + getKeyDisplayName(s.substring(s.lastIndexOf('_') + 1));
+            ret = "Holds both CMD and " + getKeyDisplayName(s);
         } else if (kval.startsWith("LCTL(")) {
             String s = kval.substring(5).replaceAll("\\)", "");
-            ret = "holds both Ctrl and " + getKeyDisplayName(s.substring(s.lastIndexOf('_') + 1));
+            ret = "holds both Ctrl and " + getKeyDisplayName(s);
         } else if (kval.startsWith("LALT(")) {
             String s = kval.substring(5).replaceAll("\\)", "");
-            ret = "holds both ALT and " + getKeyDisplayName(s.substring(s.lastIndexOf('_') + 1));
+            ret = "holds both ALT and " + getKeyDisplayName(s);
         } else if (kval.startsWith("LSFT(")) {
             String s = kval.substring(5).replaceAll("\\)", "");
-            ret = "holds both Shift and " + getKeyDisplayName(s.substring(s.lastIndexOf('_') + 1));
+            ret = "holds both Shift and " + getKeyDisplayName(s);
         } else if (kval.startsWith("M(")) {
             ret = kval.substring(2);
             ret = ret.substring(0, ret.length() - 1);
@@ -784,11 +909,11 @@ public class Main extends Application {
             ret = "Function call: " + kval;
         } else {
             //SAnity check:
-            KeyCode k = KeyCode.valueOf(kval);
+            ErgodoxKeyCode k = ErgodoxKeyCode.valueOf(kval);
             if (k == null) {
                 ret = "Invalid key " + ret;
             } else {
-                ret = "Key: " + getKeyDisplayName(kval.substring(kval.lastIndexOf('_') + 1));
+                ret = "Key: " + getKeyDisplayName(kval);
             }
         }
 
@@ -803,23 +928,23 @@ public class Main extends Application {
             ret = kval.substring(3).replaceAll("\\)", "");
         } else if (kval.startsWith("ALL_T(")) {
             String s = kval.substring(6).replaceAll("\\)", "");
-            s=getKeyDisplayName(s.substring(s.lastIndexOf('_')+1));
+            s = getKeyDisplayName(s.substring(s.lastIndexOf('_') + 1));
             ret = s + "\nHyper";
         } else if (kval.startsWith("MEH_T(")) {
             String s = kval.substring(6).replaceAll("\\)", "");
-            s=getKeyDisplayName(s.substring(s.lastIndexOf('_')+1));
+            s = getKeyDisplayName(s.substring(s.lastIndexOf('_') + 1));
             ret = s + "\nMeh";
         } else if (kval.startsWith("ALT_T(")) {
             String s = kval.substring(6).replaceAll("\\)", "");
-            s=getKeyDisplayName(s.substring(s.lastIndexOf('_')+1));
+            s = getKeyDisplayName(s.substring(s.lastIndexOf('_') + 1));
             ret = s + "\nALT";
         } else if (kval.startsWith("CTL_T(")) {
             String s = kval.substring(6).replaceAll("\\)", "");
-            s=getKeyDisplayName(s.substring(s.lastIndexOf('_')+1));
+            s = getKeyDisplayName(s.substring(s.lastIndexOf('_') + 1));
             ret = s + "\nCtrl";
         } else if (kval.startsWith("GUI_T(")) {
             String s = kval.substring(6).replaceAll("\\)", "");
-            s=getKeyDisplayName(s.substring(s.lastIndexOf('_')+1));
+            s = getKeyDisplayName(s.substring(s.lastIndexOf('_') + 1));
             ret = s + "\nCMD";
         } else if (kval.startsWith("LT(")) {
             String s = kval.substring(3).replaceAll("\\)", "");
@@ -848,7 +973,7 @@ public class Main extends Application {
         } else if (!kval.contains("_") || kval.contains("(")) {
             ret = kval;
         } else {
-            KeyCode k = KeyCode.valueOf(kval);
+            ErgodoxKeyCode k = ErgodoxKeyCode.valueOf(kval);
             if (k == null) {
                 //error
                 ret = "invalid";
@@ -862,14 +987,53 @@ public class Main extends Application {
 
     private String getKeyDisplayName(String ret) {
         ret = ret.replaceAll("LSFT", "Shift")
-                .replaceAll("RSFT","Shift")
+                .replaceAll("RSFT", "Shift")
                 .replaceAll("KC_NO", "None")
                 .replaceAll("KC_", "");
-        ret=ret.replaceAll("^AE","Ä");
-        ret=ret.replaceAll("^OE","Ö");
-        ret=ret.replaceAll("^UE","Ü");
-        ret=ret.replaceAll("^SS","ß");
-        ret = ret.replaceAll("LESS", "<");
+        ret = ret.replaceAll("^AE", "Ä");
+        ret = ret.replaceAll("^OE", "Ö");
+        ret = ret.replaceAll("^UE", "Ü");
+        ret = ret.replaceAll("^SS", "ß");
+        ret = ret.replaceAll("^LESS", "<");
+        ret = ret.replaceAll("^MORE", ">");
+        ret = ret.replaceAll("^PIPE", "|");
+        ret = ret.replaceAll("^TILDE", "~");
+        ret = ret.replaceAll("^TILD", "~");
+        ret = ret.replaceAll("^EXLM", "!");
+        ret = ret.replaceAll("^CIRC", "°");
+        ret = ret.replaceAll("^DLR", "\\$");
+        ret = ret.replaceAll("^QST", "?");
+        ret = ret.replaceAll("^DOT", ".");
+        ret = ret.replaceAll("^COMMA", ",");
+        ret = ret.replaceAll("^COMM", ",");
+        ret = ret.replaceAll("^SLSH", "/");
+        ret = ret.replaceAll("^BSLS", "\\\\");
+        ret = ret.replaceAll("^PERC", "%");
+        ret = ret.replaceAll("^SLASH", "/");
+        ret = ret.replaceAll("^HASH", "#");
+        ret = ret.replaceAll("^LPRN", "(");
+        ret = ret.replaceAll("^RPRN", ")");
+        ret = ret.replaceAll("^PLUS", "+");
+        ret = ret.replaceAll("^COLN", ":");
+        ret = ret.replaceAll("^SCLN", ";");
+        ret = ret.replaceAll("^MINS", "-");
+        ret = ret.replaceAll("^EQL", "=");
+        ret = ret.replaceAll("^LCBR", "{");
+        ret = ret.replaceAll("^RCBR", "}");
+        ret = ret.replaceAll("^LBRC", "[");
+        ret = ret.replaceAll("^RBRC", "]");
+        ret = ret.replaceAll("^UNDS", "_");
+        ret = ret.replaceAll("^AT", "@");
+        ret = ret.replaceAll("^EURO", "€");
+        ret = ret.replaceAll("^AMPR", "&");
+        ret = ret.replaceAll("^PARA", "§");
+        ret = ret.replaceAll("^DQUOT", "\"");
+        ret = ret.replaceAll("^QUOT", "'");
+        ret = ret.replaceAll("^ASTR", "*");
+        ret = ret.replaceAll("^GRV", "`");
+        ret = ret.replaceAll("^ACCUT", "");
+        ret = ret.replaceAll("^SQ2", "²");
+        ret = ret.replaceAll("^SQ3", "³");
         ret = ret.replaceAll("LCTL", "Ctrl");
         ret = ret.replaceAll("LCTRL", "Ctrl");
         ret = ret.replaceAll("LALT", "Alt");

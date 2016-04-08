@@ -56,7 +56,7 @@
 
 package de.caluga.ergodox.macros;
 
-import de.caluga.ergodox.KeyCode;
+import de.caluga.ergodox.ErgodoxKeyCode;
 
 /**
  * User: Stephan Bösebeck
@@ -67,15 +67,15 @@ import de.caluga.ergodox.KeyCode;
  */
 public class MacroAction {
 
-    private KeyCode code;
+    private ErgodoxKeyCode code;
     private int wait;
     private Action action;
 
-    public KeyCode getCode() {
+    public ErgodoxKeyCode getCode() {
         return code;
     }
 
-    public void setCode(KeyCode code) {
+    public void setCode(ErgodoxKeyCode code) {
         this.code = code;
     }
 

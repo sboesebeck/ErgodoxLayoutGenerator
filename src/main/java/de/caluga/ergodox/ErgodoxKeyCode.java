@@ -56,7 +56,7 @@
 
 package de.caluga.ergodox;
 
-public enum KeyCode {
+public enum ErgodoxKeyCode {
     BL_0,
     BL_1,
     BL_10,

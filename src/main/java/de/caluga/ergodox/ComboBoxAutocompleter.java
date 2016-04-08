@@ -54,50 +54,104 @@
  * If the Library as you received it specifies that a proxy can decide whether future versions of the GNU Lesser General Public License shall apply, that proxy's public statement of acceptance of any version is permanent authorization for you to choose that version for the Library.
  */
 
-package de.caluga.ergodox.macros;
+package de.caluga.ergodox;
 
-import de.caluga.ergodox.ErgodoxKeyCode;
-
-import java.util.List;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
+import javafx.event.EventHandler;
+import javafx.scene.control.ComboBox;
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyEvent;
 
 /**
  * User: Stephan Bösebeck
- * Date: 02.04.16
- * Time: 23:12
+ * Date: 08.04.16
+ * Time: 22:45
  * <p>
  * TODO: Add documentation here
  */
-public abstract class Macro {
-    private String name;
+public class ComboBoxAutocompleter<T> implements EventHandler<KeyEvent> {
+    private ComboBox comboBox;
+    private StringBuilder sb;
+    private ObservableList<T> data;
+    private boolean moveCaretToPos = false;
+    private int caretPos;
 
-    public static String simpifyKeyCode(ErgodoxKeyCode c) {
-        if (c.name().lastIndexOf("_") < 0) return c.name();
-        return c.name().substring(c.name().lastIndexOf("_") + 1);
-    }
+    public ComboBoxAutocompleter(final ComboBox comboBox) {
+        this.comboBox = comboBox;
+        sb = new StringBuilder();
+        data = comboBox.getItems();
 
-    public static String getMacroActionListString(List<MacroAction> lst) {
-        StringBuilder b = new StringBuilder();
-        boolean first = true;
-        for (MacroAction action : lst) {
-            if (first) {
-                first = false;
-            } else {
-                b.append(", ");
+        this.comboBox.setEditable(true);
+        this.comboBox.setOnKeyPressed(new EventHandler<KeyEvent>() {
+
+            @Override
+            public void handle(KeyEvent t) {
+                comboBox.hide();
             }
-            b.append(action.toString());
+        });
+        this.comboBox.setOnKeyReleased(ComboBoxAutocompleter.this);
+    }
+
+    @Override
+    public void handle(KeyEvent event) {
+
+        if (event.getCode() == KeyCode.UP) {
+            caretPos = -1;
+            moveCaret(comboBox.getEditor().getText().length());
+            return;
+        } else if (event.getCode() == KeyCode.DOWN) {
+            if (!comboBox.isShowing()) {
+                comboBox.show();
+            }
+            caretPos = -1;
+            moveCaret(comboBox.getEditor().getText().length());
+            return;
+        } else if (event.getCode() == KeyCode.BACK_SPACE) {
+            moveCaretToPos = true;
+            caretPos = comboBox.getEditor().getCaretPosition();
+        } else if (event.getCode() == KeyCode.DELETE) {
+            moveCaretToPos = true;
+            caretPos = comboBox.getEditor().getCaretPosition();
         }
-        return b.toString();
+
+        if (event.getCode() == KeyCode.RIGHT || event.getCode() == KeyCode.LEFT
+                || event.isControlDown() || event.getCode() == KeyCode.HOME
+                || event.getCode() == KeyCode.END || event.getCode() == KeyCode.TAB) {
+            return;
+        }
+
+        updateSelection();
     }
 
-    public String getName() {
-        return name;
+    public void updateSelection() {
+        ObservableList list = FXCollections.observableArrayList();
+        for (int i = 0; i < data.size(); i++) {
+            if (data.get(i).toString().toLowerCase().startsWith(
+                    ComboBoxAutocompleter.this.comboBox
+                            .getEditor().getText().toLowerCase())) {
+                list.add(data.get(i));
+            }
+        }
+        String t = comboBox.getEditor().getText();
+
+        comboBox.setItems(list);
+        comboBox.getEditor().setText(t);
+        if (!moveCaretToPos) {
+            caretPos = -1;
+        }
+        moveCaret(t.length());
+        if (!list.isEmpty()) {
+            comboBox.show();
+        }
     }
 
-    public void setName(String name) {
-        this.name = name;
+    private void moveCaret(int textLength) {
+        if (caretPos == -1) {
+            comboBox.getEditor().positionCaret(textLength);
+        } else {
+            comboBox.getEditor().positionCaret(caretPos);
+        }
+        moveCaretToPos = false;
     }
-
-    public abstract String getDescription();
-
-    public abstract String getMacroGuiText();
 }

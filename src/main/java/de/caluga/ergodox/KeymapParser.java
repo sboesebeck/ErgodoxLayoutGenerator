@@ -211,6 +211,7 @@ public class KeymapParser {
                 TypeMacro tm = new TypeMacro();
 
                 List<MacroAction> list = parseActionList(typing);
+                tm.setActions(list);
                 System.out.println("Got Macro: " + tm.toString());
                 macro = tm;
 
@@ -230,7 +231,7 @@ public class KeymapParser {
                 lt.setShortStrokes(parseActionList(mLTTypeMacro.group(4)));
                 //group 3 should only contain the Up-calls for group 1!
                 //Sanity check
-                List<KeyCode> pressedKeys = new ArrayList<>();
+                List<ErgodoxKeyCode> pressedKeys = new ArrayList<>();
                 for (MacroAction m : lt.getLongPressKeys()) {
                     switch (m.getAction()) {
                         case DOWN:
@@ -251,7 +252,7 @@ public class KeymapParser {
                 }
                 if (pressedKeys.size() != 0) {
                     System.err.println("Warning, some keys are not properly released after macro: ");
-                    for (KeyCode k : pressedKeys) {
+                    for (ErgodoxKeyCode k : pressedKeys) {
                         System.err.println(k.toString());
                     }
                 }
@@ -299,15 +300,15 @@ public class KeymapParser {
         MacroAction a = new MacroAction();
         if (token.startsWith("D(")) {
             a.setAction(MacroAction.Action.DOWN);
-            a.setCode(KeyCode.valueOf("KC_" + token.substring(2, token.length() - 1)));
+            a.setCode(ErgodoxKeyCode.valueOf("KC_" + token.substring(2, token.length() - 1)));
 
         } else if (token.startsWith("U(")) {
             a.setAction(MacroAction.Action.UP);
-            a.setCode(KeyCode.valueOf("KC_" + token.substring(2, token.length() - 1)));
+            a.setCode(ErgodoxKeyCode.valueOf("KC_" + token.substring(2, token.length() - 1)));
 
         } else if (token.startsWith("T(")) {
             a.setAction(MacroAction.Action.TYPE);
-            a.setCode(KeyCode.valueOf("KC_" + token.substring(2, token.length() - 1)));
+            a.setCode(ErgodoxKeyCode.valueOf("KC_" + token.substring(2, token.length() - 1)));
         } else if (token.startsWith("W(")) {
             a.setAction(MacroAction.Action.WAIT);
             a.setWait(Integer.parseInt(token.substring(2, token.length() - 1)));
