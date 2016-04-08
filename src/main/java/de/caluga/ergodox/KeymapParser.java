@@ -56,17 +56,13 @@
 
 package de.caluga.ergodox;
 
-import de.caluga.ergodox.macros.LTMacro;
-import de.caluga.ergodox.macros.MacroAction;
-import de.caluga.ergodox.macros.TypeMacro;
+import de.caluga.ergodox.macros.*;
+import org.apache.commons.collections.map.HashedMap;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.Map;
+import java.util.*;
 import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 
 /**
@@ -192,9 +188,9 @@ public class KeymapParser {
         start = idx;
         idx = getTextBetweenBraces(idx, brCount);
         String macros = fileContent.substring(start, idx);
-        Pattern typeMacro = Pattern.compile("if\\(record->event.pressed\\)\\{returnMACRO\\(([^;]+),END\\);}");
-        Pattern layerToggleMacro = Pattern.compile("if\\(record->event.pressed\\)\\{layer_state\\^=\\(1<<([^ ]+)\\);layer_state&=\\(1<<[^ ]+\\);}");
-        Pattern ltTypeMacro = Pattern.compile("if\\(record->event.pressed\\)\\{start=timer_read\\(\\);returnMACRO\\(([^;]+),END\\);\\}else\\{if\\(timer_elapsed\\(start\\)>([0-9]+)\\)\\{returnMACRO\\(([^;]+),END\\);\\}else\\{returnMACRO\\(([^;]+),END\\);\\}\\}");
+
+        Map<String, Macro> keymapMacros = new HashedMap();
+
         while (macros.length() > 0) {
             idx = macros.indexOf("case ");
             if (idx == -1) break;
@@ -202,59 +198,124 @@ public class KeymapParser {
             String macroName = macros.substring(idx, macros.indexOf(":", idx));
             System.out.println("Found macro " + macroName);
 
-            String macroContent = macros.substring(macros.indexOf(":", idx) + 1, macros.indexOf("break;", idx));
-            macroContent = macroContent.replaceAll("[\n\t ]", "");
-            Matcher mTypingMacro = typeMacro.matcher(macroContent);
-            Matcher mLayerToggleMacro = layerToggleMacro.matcher(macroContent);
-            Matcher mLTTypeMacro = ltTypeMacro.matcher(macroContent);
+            String originalMacroContent = macros.substring(macros.indexOf(":", idx) + 1, macros.indexOf("break;", idx));
+            String normalizedMacroContent = originalMacroContent.replaceAll("[\n\t ]", "");
+            Matcher mTypingMacro = TypeMacro.pattern.matcher(normalizedMacroContent);
+            Matcher mLayerToggleMacro = LayerToggleMacro.pattern.matcher(normalizedMacroContent);
+            Matcher mLTTypeMacro = LTMacro.pattern.matcher(normalizedMacroContent);
+            Matcher mHoldKeyMacro = HoldKeyMacro.pattern.matcher(normalizedMacroContent);
+            Macro macro;
             if (mTypingMacro.matches()) {
                 String typing = mTypingMacro.group(1);
                 System.out.println("Regular typing macro: " + typing);
                 TypeMacro tm = new TypeMacro();
-                for (String token : typing.split(",")) {
-                    MacroAction a = new MacroAction();
-                    if (token.startsWith("D(")) {
-                        a.setAction(MacroAction.Action.DOWN);
-                        a.setCode(KeyCode.valueOf("KC_" + token.substring(2, token.length() - 1)));
 
-                    } else if (token.startsWith("U(")) {
-                        a.setAction(MacroAction.Action.UP);
-                        a.setCode(KeyCode.valueOf("KC_" + token.substring(2, token.length() - 1)));
-
-                    } else if (token.startsWith("T(")) {
-                        a.setAction(MacroAction.Action.TYPE);
-                        a.setCode(KeyCode.valueOf("KC_" + token.substring(2, token.length() - 1)));
-                    } else if (token.startsWith("W(")) {
-                        a.setAction(MacroAction.Action.WAIT);
-                        a.setWait(Integer.parseInt(token.substring(2, token.length() - 1)));
-                    } else {
-                        System.err.println("Cannot handle this macro action: " + token);
-                        continue;
-                    }
-                    tm.getActions().add(a);
-                }
+                List<MacroAction> list = parseActionList(typing);
                 System.out.println("Got Macro: " + tm.toString());
+                macro = tm;
 
+            } else if (mHoldKeyMacro.matches()) {
+                System.out.println("HoldKeyMacro matches!");
+                System.out.println("OnKeyPress: " + mHoldKeyMacro.group(1) + "  onRelease: " + mHoldKeyMacro.group(2));
+                HoldKeyMacro hkm = new HoldKeyMacro();
+                hkm.setOnPress(parseActionList(mHoldKeyMacro.group(1)));
+                hkm.setOnRelease(parseActionList(mHoldKeyMacro.group(2)));
+                macro = hkm;
             } else if (mLTTypeMacro.matches()) {
                 System.out.println("Got LTType Macro; onPress: " + mLTTypeMacro.group(1) + "  timeout: " + mLTTypeMacro.group(2) + "  release: " + mLTTypeMacro.group(3) + "  type: " + mLTTypeMacro.group(4));
                 LTMacro lt = new LTMacro();
+                List<MacroAction> lst = parseActionList(mLTTypeMacro.group(1));
+                lt.setLongPressKeys(lst);
+                lt.setTimeout(Integer.parseInt(mLTTypeMacro.group(2)));
+                lt.setShortStrokes(parseActionList(mLTTypeMacro.group(4)));
+                //group 3 should only contain the Up-calls for group 1!
+                //Sanity check
+                List<KeyCode> pressedKeys = new ArrayList<>();
+                for (MacroAction m : lt.getLongPressKeys()) {
+                    switch (m.getAction()) {
+                        case DOWN:
+                            pressedKeys.add(m.getCode());
+                            break;
+                        case UP:
+                            pressedKeys.remove(m.getCode());
+                            break;
+                    }
+                }
+                List<MacroAction> releases = parseActionList(mLTTypeMacro.group(3));
+                for (MacroAction a : releases) {
+                    switch (a.getAction()) {
+                        case UP:
+                            pressedKeys.remove(a.getCode());
+                            break;
+                    }
+                }
+                if (pressedKeys.size() != 0) {
+                    System.err.println("Warning, some keys are not properly released after macro: ");
+                    for (KeyCode k : pressedKeys) {
+                        System.err.println(k.toString());
+                    }
+                }
+                macro = lt;
 
             } else if (mLayerToggleMacro.matches()) {
                 System.out.println("Layer toggle macro: Layer " + mLayerToggleMacro.group(1));
+                LayerToggleMacro lm = new LayerToggleMacro();
+                lm.setLayer(mLayerToggleMacro.group(1));
+                lm.setName(macroName);
+                macro = lm;
             } else {
                 System.out.println("Unknown custom macro?");
-                System.out.println(macroContent);
+                System.out.println(normalizedMacroContent);
+                CustomMacro cm = new CustomMacro();
+                cm.setContent(originalMacroContent);
+                macro = cm;
             }
+            macro.setName(macroName);
 
             macros = macros.substring(macros.indexOf("break;", idx));
             //Does not work if you have nested case statements!!!!!
+            keymapMacros.put(macroName, macro);
 
         }
 
         ErgodoxLayout layout = new ErgodoxLayout();
         layout.setLayers(ret);
+        layout.setMacros(keymapMacros);
         return layout;
 //        System.out.println(fileContent.toString());
+    }
+
+    private List<MacroAction> parseActionList(String typing) {
+        List<MacroAction> list = new ArrayList<>();
+        for (String token : typing.split(",")) {
+            MacroAction a = parseMacroAction(token);
+            if (a == null) continue;
+            list.add(a);
+        }
+        return list;
+    }
+
+    private MacroAction parseMacroAction(String token) {
+        MacroAction a = new MacroAction();
+        if (token.startsWith("D(")) {
+            a.setAction(MacroAction.Action.DOWN);
+            a.setCode(KeyCode.valueOf("KC_" + token.substring(2, token.length() - 1)));
+
+        } else if (token.startsWith("U(")) {
+            a.setAction(MacroAction.Action.UP);
+            a.setCode(KeyCode.valueOf("KC_" + token.substring(2, token.length() - 1)));
+
+        } else if (token.startsWith("T(")) {
+            a.setAction(MacroAction.Action.TYPE);
+            a.setCode(KeyCode.valueOf("KC_" + token.substring(2, token.length() - 1)));
+        } else if (token.startsWith("W(")) {
+            a.setAction(MacroAction.Action.WAIT);
+            a.setWait(Integer.parseInt(token.substring(2, token.length() - 1)));
+        } else {
+            System.err.println("Cannot handle this macro action: " + token);
+            return null;
+        }
+        return a;
     }
 
     private int getTextBetweenBraces(int idx, int brCount) {

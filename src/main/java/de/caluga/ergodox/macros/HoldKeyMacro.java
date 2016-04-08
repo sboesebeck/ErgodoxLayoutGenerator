@@ -61,62 +61,62 @@ import java.util.regex.Pattern;
 
 /**
  * User: Stephan Bösebeck
- * Date: 02.04.16
- * Time: 23:14
+ * Date: 08.04.16
+ * Time: 10:09
  * <p>
  * TODO: Add documentation here
  */
-public class LTMacro extends Macro {
-    public final static Pattern pattern = Pattern.compile("if\\(record->event.pressed\\)\\{start=timer_read\\(\\);returnMACRO\\(([^;]+),END\\);\\}else\\{if\\(timer_elapsed\\(start\\)>([0-9]+)\\)\\{returnMACRO\\(([^;]+),END\\);\\}else\\{returnMACRO\\(([^;]+),END\\);\\}\\}");
+public class HoldKeyMacro extends Macro {
+    public final static Pattern pattern = Pattern.compile("if\\(record->event.pressed\\)\\{returnMACRO\\(([^;]+),END\\);\\}else\\{returnMACRO\\(([^;]+),END\\);\\}");
 
-    private List<MacroAction> longPressKeys;
-    private List<MacroAction> shortStrokes;
-    private int timeout=150;
+    private List<MacroAction> onPress;
+    private List<MacroAction> onRelease;
 
-    public int getTimeout() {
-        return timeout;
+    public HoldKeyMacro() {
+
     }
 
-    public void setTimeout(int timeout) {
-        this.timeout = timeout;
+    public List<MacroAction> getOnPress() {
+        return onPress;
     }
 
-    public List<MacroAction> getLongPressKeys() {
-        return longPressKeys;
+    public void setOnPress(List<MacroAction> onPress) {
+        this.onPress = onPress;
     }
 
-    public void setLongPressKeys(List<MacroAction> longPressKeys) {
-        this.longPressKeys = longPressKeys;
+    public List<MacroAction> getOnRelease() {
+        return onRelease;
     }
 
-    public List<MacroAction> getShortStrokes() {
-        return shortStrokes;
-    }
-
-    public void setShortStrokes(List<MacroAction> shortStrokes) {
-        this.shortStrokes = shortStrokes;
+    public void setOnRelease(List<MacroAction> onRelease) {
+        this.onRelease = onRelease;
     }
 
     @Override
     public String getMacroGuiText() {
-
-
-        return "LT\n" + getName().replaceAll("^M_", "");
+        String keys = "";
+        for (MacroAction a : onPress) {
+            keys += simpifyKeyCode(a.getCode());
+            keys += ",";
+        }
+        return getName() + "\nHold:";
     }
+
 
     @Override
     public String getDescription() {
         StringBuilder b = new StringBuilder();
-
-        b.append("Macro ").append(getName());
+        b.append("Macro ");
+        b.append(getName());
+        b.append(":\n");
+        b.append("Holiding down a combination of keys\n");
+        b.append("OnKeyPress:");
+        b.append(getMacroActionListString(getOnPress()));
         b.append("\n");
-        b.append("Hold Key: ");
-        b.append(getMacroActionListString(getLongPressKeys()));
-        b.append("\n");
-        b.append("Type key: ");
-        b.append(getMacroActionListString(getShortStrokes()));
-        b.append("\n");
-        b.append("Timeout: " + getTimeout());
+        b.append("OnRelease:");
+        b.append(getMacroActionListString(getOnRelease()));
         return b.toString();
     }
+
+
 }

@@ -56,67 +56,34 @@
 
 package de.caluga.ergodox.macros;
 
-import java.util.List;
 import java.util.regex.Pattern;
 
 /**
  * User: Stephan Bösebeck
- * Date: 02.04.16
- * Time: 23:14
+ * Date: 08.04.16
+ * Time: 09:49
  * <p>
  * TODO: Add documentation here
  */
-public class LTMacro extends Macro {
-    public final static Pattern pattern = Pattern.compile("if\\(record->event.pressed\\)\\{start=timer_read\\(\\);returnMACRO\\(([^;]+),END\\);\\}else\\{if\\(timer_elapsed\\(start\\)>([0-9]+)\\)\\{returnMACRO\\(([^;]+),END\\);\\}else\\{returnMACRO\\(([^;]+),END\\);\\}\\}");
+public class LayerToggleMacro extends Macro {
+    public final static Pattern pattern = Pattern.compile("if\\(record->event.pressed\\)\\{layer_state\\^=\\(1<<([^ ]+)\\);layer_state&=\\(1<<[^ ]+\\);}");
+    private String layer;
 
-    private List<MacroAction> longPressKeys;
-    private List<MacroAction> shortStrokes;
-    private int timeout=150;
-
-    public int getTimeout() {
-        return timeout;
+    public String getLayer() {
+        return layer;
     }
 
-    public void setTimeout(int timeout) {
-        this.timeout = timeout;
-    }
-
-    public List<MacroAction> getLongPressKeys() {
-        return longPressKeys;
-    }
-
-    public void setLongPressKeys(List<MacroAction> longPressKeys) {
-        this.longPressKeys = longPressKeys;
-    }
-
-    public List<MacroAction> getShortStrokes() {
-        return shortStrokes;
-    }
-
-    public void setShortStrokes(List<MacroAction> shortStrokes) {
-        this.shortStrokes = shortStrokes;
+    public void setLayer(String layer) {
+        this.layer = layer;
     }
 
     @Override
     public String getMacroGuiText() {
-
-
-        return "LT\n" + getName().replaceAll("^M_", "");
+        return "Toggle " + layer;
     }
 
     @Override
     public String getDescription() {
-        StringBuilder b = new StringBuilder();
-
-        b.append("Macro ").append(getName());
-        b.append("\n");
-        b.append("Hold Key: ");
-        b.append(getMacroActionListString(getLongPressKeys()));
-        b.append("\n");
-        b.append("Type key: ");
-        b.append(getMacroActionListString(getShortStrokes()));
-        b.append("\n");
-        b.append("Timeout: " + getTimeout());
-        return b.toString();
+        return "Macro " + getName() + "\n Toggle layer " + getLayer();
     }
 }

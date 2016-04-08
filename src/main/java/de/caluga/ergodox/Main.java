@@ -58,6 +58,7 @@ package de.caluga.ergodox; /**
  * Created by stephan on 29.03.16.
  */
 
+import de.caluga.ergodox.macros.Macro;
 import javafx.application.Application;
 import javafx.embed.swing.SwingFXUtils;
 import javafx.event.ActionEvent;
@@ -120,6 +121,7 @@ public class Main extends Application {
     private Button createKeymap;
     private Button openBtn;
     private Button saveBtn;
+    private Button reopenBtn;
     private int initialWindowWidth;
     private int initialWindowHeight;
     private double currentWindowHeight;
@@ -140,12 +142,17 @@ public class Main extends Application {
     private Label legendModifierKey;
     private Label legendCombination;
     private Label legendHoldKey;
+
+    private Label keyDescription;
     private Button saveImgBtn;
     private String currentKeymap;
     private Label ledDesc;
     private Label led1;
     private Label led2;
     private Label led3;
+    private ErgodoxLayout ergodoxLayout;
+    private Properties applicationSettings;
+    private String lastOpenedFile = "last_opened_file";
 
 
     public static void main(String[] args) {
@@ -208,17 +215,17 @@ public class Main extends Application {
         });
         root.addEventHandler(KeyEvent.KEY_PRESSED, event -> {
             // System.out.println("KEyEvent: "+event.getCode().impl_getCode()+" name: KC_"+event.getCode().getName());
-            if (selectedGuiKey != null) {
-                currentLayer.getLayout().get(selectedKeyIndexInLayout).setValue(event.getCode().getName().toUpperCase());
-                unmarkKey();
-                selectedGuiKey = null;
-                layout(canvas);
-            } else {
-                if (event.getCode().getName().equals("O")) {
-                    openDialog(primaryStage);
-                } else if (event.getCode().getName().equals("K")) {
-                    openKeymap(primaryStage);
-                }
+//            if (selectedGuiKey != null) {
+//                currentLayer.getLayout().get(selectedKeyIndexInLayout).setValue(event.getCode().getName().toUpperCase());
+//                unmarkKey();
+//                selectedGuiKey = null;
+//                layout(canvas);
+//            } else {
+//            }
+            if (event.getCode().getName().equals("O")) {
+                openDialog(primaryStage);
+            } else if (event.getCode().getName().equals("K")) {
+                openKeymap(primaryStage);
             }
         });
         int idx = 0;
@@ -241,6 +248,10 @@ public class Main extends Application {
             clearMI.addEventHandler(ActionEvent.ACTION, new EventHandler<ActionEvent>() {
                 @Override
                 public void handle(ActionEvent event) {
+                    currentLayer.getLayout().get(i).setValue("KC_TRNS");
+                    unmarkKey();
+                    selectedGuiKey = null;
+                    layout(canvas);
 
                 }
             });
@@ -248,8 +259,7 @@ public class Main extends Application {
                 @Override
                 public void handle(ContextMenuEvent event) {
                     if (selectedGuiKey != null) unmarkKey();
-                    label.setEffect(null);
-                    label.borderProperty().setValue(new Border(new BorderStroke(Color.GREEN, BorderStrokeStyle.SOLID, new CornerRadii(5), new BorderWidths(2))));
+                    markLabel(label);
                     selectedGuiKey = label;
                 }
             });
@@ -264,8 +274,9 @@ public class Main extends Application {
                 if (selectedGuiKey != null) {
                     unmarkKey();
                 }
-                label.setEffect(null);
-                label.borderProperty().setValue(new Border(new BorderStroke(Color.GREEN, BorderStrokeStyle.SOLID, new CornerRadii(5), new BorderWidths(2))));
+                markLabel(label);
+
+                keyDescription.setText(getKeyDescription(k1.getValue()));
                 selectedGuiKey = label;
             });
             canvas.getChildren().add(label);
@@ -283,6 +294,18 @@ public class Main extends Application {
         openBtn = new Button("open");
         openBtn.addEventHandler(ActionEvent.ACTION, event -> {
             openKeymap(primaryStage);
+        });
+        reopenBtn = new Button("reopen last");
+        reopenBtn.addEventHandler(ActionEvent.ACTION, event -> {
+            String f = applicationSettings.getProperty(lastOpenedFile);
+            if (f == null) return;
+            File file = new File(f);
+            try {
+                readKeymapFile(primaryStage, file);
+            } catch (Exception e) {
+                //TODO: Implement Handling
+                throw new RuntimeException(e);
+            }
         });
 
         saveBtn = new Button("save");
@@ -348,6 +371,8 @@ public class Main extends Application {
         legendHoldKey = new Label("Type Key \n hold key");
         layoutLabel(legendHoldKey,Color.LIGHTSKYBLUE);
 
+        keyDescription = new Label("");
+
         ledDesc=new Label("LEDs:");
         led1=new Label("●");
         led1.setTextFill(Color.GRAY);
@@ -382,6 +407,7 @@ public class Main extends Application {
 //        canvas.getChildren().add(macroCombo);
         canvas.getChildren().add(setSourceDir);
         canvas.getChildren().add(openBtn);
+        canvas.getChildren().add(reopenBtn);
         canvas.getChildren().add(saveBtn);
         canvas.getChildren().add(saveImgBtn);
         canvas.getChildren().add(sourceDirLabel);
@@ -400,6 +426,7 @@ public class Main extends Application {
         canvas.getChildren().add(led1);
         canvas.getChildren().add(led2);
         canvas.getChildren().add(led3);
+        canvas.getChildren().add(keyDescription);
         layout(canvas);
 
         root.getChildren().add(canvas);
@@ -443,6 +470,13 @@ public class Main extends Application {
 
     }
 
+    private void markLabel(Label label) {
+        label.setEffect(null);
+        label.borderProperty().setValue(new Border(new BorderStroke(Color.GREEN, BorderStrokeStyle.SOLID, new CornerRadii(5), new BorderWidths(2))));
+
+        keyDescription.borderProperty().setValue(new Border(new BorderStroke(Color.GREEN, BorderStrokeStyle.SOLID, new CornerRadii(2), new BorderWidths(1))));
+    }
+
     public void saveAsPng() {
         FileChooser fc=new FileChooser();
         fc.setInitialDirectory(new File(qmkSourceDir.getPath()+"/keyboard/ergodox_ez/keymaps/"+currentKeymap));
@@ -450,6 +484,7 @@ public class Main extends Application {
         File file=fc.showSaveDialog(null);
         if (file==null)return;
 
+        unmarkKey();
         layerCombo.getSelectionModel().select(0);
         WritableImage image = canvas.snapshot(new SnapshotParameters(), null);
 
@@ -457,6 +492,7 @@ public class Main extends Application {
         BufferedImage img=new BufferedImage((int)image.getWidth(), snapshowHeight *layerCombo.getItems().size(),BufferedImage.TYPE_INT_RGB);
         createLayer.setVisible(false);
         deleteLayer.setVisible(false);
+        keyDescription.setVisible(false);
         for (int i=0;i<layerCombo.getItems().size();i++){
             layerCombo.getSelectionModel().select(i);
             image = canvas.snapshot(new SnapshotParameters(), null);
@@ -471,19 +507,32 @@ public class Main extends Application {
         }
         createLayer.setVisible(true);
         deleteLayer.setVisible(true);
+        keyDescription.setVisible(true);
     }
 
     private void readConfig() {
         File properties = configFile;
         if (properties.exists()) {
             try {
-                Properties prop = new Properties();
-                prop.load(new FileInputStream(properties));
-                qmkSourceDir = new File(prop.getProperty(qmksourcedir));
+                applicationSettings = new Properties();
+                applicationSettings.load(new FileInputStream(properties));
+                qmkSourceDir = new File(applicationSettings.getProperty(qmksourcedir));
                 sourceDirLabel.setText(qmkSourceDir.getPath());
             } catch (Exception e) {
                 //ignore
             }
+        }
+        if (applicationSettings == null) {
+            applicationSettings = new Properties();
+        }
+    }
+
+    private void saveConfig() {
+        try {
+            applicationSettings.store(new FileWriter(configFile), "Ergodox Layout Generator");
+        } catch (Exception e) {
+            //TODO: Implement Handling
+            throw new RuntimeException(e);
         }
     }
 
@@ -497,7 +546,6 @@ public class Main extends Application {
     }
 
     private void openKeymap(Stage primaryStage) {
-        KeymapParser parser = new KeymapParser();
         try {
             DirectoryChooser fc = new DirectoryChooser();
             if (qmkSourceDir == null) {
@@ -509,22 +557,34 @@ public class Main extends Application {
             File selected = fc.showDialog(primaryStage);
             if (selected == null) return;
 
-            ErgodoxLayout layout = parser.parse(selected.getAbsolutePath() + "/keymap.c");
-            layerCombo.getItems().clear();
-            layers.clear();
-            for (String k : layout.getLayers().keySet()) {
-                layerCombo.getItems().add(0, k);
-                layers.add(0, layout.getLayers().get(k));
-            }
-            currentLayer = layers.get(0);
-            layerCombo.getSelectionModel().select(0);
-            layout(canvas);
-            primaryStage.setTitle(selected.getName());
-            currentKeymap=selected.getName();
+            readKeymapFile(primaryStage, selected);
+
+
+            applicationSettings.setProperty(lastOpenedFile, selected.getAbsolutePath());
+            saveConfig();
+
         } catch (Exception e) {
             //TODO: Implement Handling
             throw new RuntimeException(e);
         }
+    }
+
+    private void readKeymapFile(Stage primaryStage, File selected) throws Exception {
+        KeymapParser parser = new KeymapParser();
+        ergodoxLayout = parser.parse(selected.getAbsolutePath() + "/keymap.c");
+        layerCombo.getItems().clear();
+        layers.clear();
+        for (String k : ergodoxLayout.getLayers().keySet()) {
+            layerCombo.getItems().add(0, k);
+            layers.add(0, ergodoxLayout.getLayers().get(k));
+        }
+        currentLayer = layers.get(0);
+        layerCombo.getSelectionModel().select(0);
+
+
+        layout(canvas);
+        primaryStage.setTitle(selected.getName());
+        currentKeymap = selected.getName();
     }
 
     private void openDialog(Stage primaryStage) {
@@ -541,14 +601,9 @@ public class Main extends Application {
 //                    return;
 //                }
         sourceDirLabel.setText(qmkSourceDir.getPath());
-        Properties p = new Properties();
-        p.setProperty(qmksourcedir, qmkSourceDir.getPath());
-        try {
-            p.store(new FileWriter(configFile), "Ergodox Layout Generator");
-        } catch (Exception e) {
-            //TODO: Implement Handling
-            throw new RuntimeException(e);
-        }
+
+        applicationSettings.setProperty(qmksourcedir, qmkSourceDir.getPath());
+        saveConfig();
     }
 
     private void unmarkKey() {
@@ -558,6 +613,8 @@ public class Main extends Application {
         ds.setOffsetY(3.0f);
         ds.setColor(Color.color(0.4f, 0.4f, 0.4f));
         selectedGuiKey.setEffect(ds);
+        keyDescription.setText("");
+        keyDescription.borderProperty().setValue(null);
     }
 
     public void layout(Pane canvas) {
@@ -643,6 +700,7 @@ public class Main extends Application {
         saveBtn.relocate(currentWindowWidth / 2, currentWindowHeight - 60);
         saveImgBtn.relocate(currentWindowWidth / 2+50, currentWindowHeight - 60);
         openBtn.relocate(currentWindowWidth / 2, currentWindowHeight - 30);
+        reopenBtn.relocate(currentWindowWidth / 2 + 50, currentWindowHeight - 30);
 
         layerCombo.relocate(5, 20);
         createLayer.relocate(150, 5);
@@ -668,6 +726,73 @@ public class Main extends Application {
         if (currentLayer.isLed2()) led2.setTextFill(Color.web("#00FF00")); else led2.setTextFill(Color.GRAY);
         if (currentLayer.isLed3()) led3.setTextFill(Color.web("#8080FF")); else led3.setTextFill(Color.GRAY);
 
+        keyDescription.relocate(currentWindowWidth / 2 - 100, currentWindowHeight - 150);
+
+    }
+
+    private String getKeyDescription(String kval) {
+        if (kval == null) return "";
+        String ret = "";
+        if (kval.equals("KC_TRNS")) {
+            ret = "Transparent key - fall back base layer";
+        } else if (kval.startsWith("TG(")) {
+            ret = "Toggle layer " + kval.substring(3).replaceAll("\\)", "");
+        } else if (kval.startsWith("ALL_T(")) {
+            String s = kval.substring(6).replaceAll("\\)", "");
+            s = getKeyDisplayName(s.substring(s.lastIndexOf('_') + 1));
+            ret = "Type key: " + s + "\nHolding key: Hyper";
+        } else if (kval.startsWith("MEH_T(")) {
+            String s = kval.substring(6).replaceAll("\\)", "");
+            s = getKeyDisplayName(s.substring(s.lastIndexOf('_') + 1));
+            ret = "Type key: " + s + "\nHolding key: Meh";
+        } else if (kval.startsWith("ALT_T(")) {
+            String s = kval.substring(6).replaceAll("\\)", "");
+            s = getKeyDisplayName(s.substring(s.lastIndexOf('_') + 1));
+            ret = "Type key: " + s + "\nHoliding key: ALT";
+        } else if (kval.startsWith("CTL_T(")) {
+            String s = kval.substring(6).replaceAll("\\)", "");
+            s = getKeyDisplayName(s.substring(s.lastIndexOf('_') + 1));
+            ret = "type key: " + s + "\nHolding key: Ctrl";
+        } else if (kval.startsWith("GUI_T(")) {
+            String s = kval.substring(6).replaceAll("\\)", "");
+            s = getKeyDisplayName(s.substring(s.lastIndexOf('_') + 1));
+            ret = "Type key: " + s + "\nHolding key: CMD";
+        } else if (kval.startsWith("LT(")) {
+            String s = kval.substring(3).replaceAll("\\)", "");
+            String lt[] = s.split(",");
+            String layer = lt[0];
+            String key = lt[1];
+            ret = "Type key: " + getKeyDisplayName(key.substring(key.lastIndexOf('_') + 1)) + "\nLayer " + layer + " when hold";
+        } else if (kval.startsWith("LGUI(")) {
+            String s = kval.substring(5).replaceAll("\\)", "");
+            ret = "Holds both CMD and " + getKeyDisplayName(s.substring(s.lastIndexOf('_') + 1));
+        } else if (kval.startsWith("LCTL(")) {
+            String s = kval.substring(5).replaceAll("\\)", "");
+            ret = "holds both Ctrl and " + getKeyDisplayName(s.substring(s.lastIndexOf('_') + 1));
+        } else if (kval.startsWith("LALT(")) {
+            String s = kval.substring(5).replaceAll("\\)", "");
+            ret = "holds both ALT and " + getKeyDisplayName(s.substring(s.lastIndexOf('_') + 1));
+        } else if (kval.startsWith("LSFT(")) {
+            String s = kval.substring(5).replaceAll("\\)", "");
+            ret = "holds both Shift and " + getKeyDisplayName(s.substring(s.lastIndexOf('_') + 1));
+        } else if (kval.startsWith("M(")) {
+            ret = kval.substring(2);
+            ret = ret.substring(0, ret.length() - 1);
+            Macro macro = ergodoxLayout.getMacros().get(ret);
+            if (macro != null) ret = macro.getDescription();
+        } else if (!kval.contains("_") || kval.contains("(")) {
+            ret = "Function call: " + kval;
+        } else {
+            //SAnity check:
+            KeyCode k = KeyCode.valueOf(kval);
+            if (k == null) {
+                ret = "Invalid key " + ret;
+            } else {
+                ret = "Key: " + getKeyDisplayName(kval.substring(kval.lastIndexOf('_') + 1));
+            }
+        }
+
+        return ret;
     }
 
     private String getKeyDisplayText(String kval) {
@@ -717,10 +842,19 @@ public class Main extends Application {
         } else if (kval.startsWith("M(")) {
             ret = kval.substring(2);
             ret = ret.substring(0, ret.length() - 1);
+            Macro macro = ergodoxLayout.getMacros().get(ret);
+            if (macro != null) ret = macro.getMacroGuiText();
+            ret = getKeyDisplayName(ret);
         } else if (!kval.contains("_") || kval.contains("(")) {
             ret = kval;
         } else {
-            ret = getKeyDisplayName(kval.substring(kval.lastIndexOf('_') + 1));
+            KeyCode k = KeyCode.valueOf(kval);
+            if (k == null) {
+                //error
+                ret = "invalid";
+            } else {
+                ret = getKeyDisplayName(kval.substring(kval.lastIndexOf('_') + 1));
+            }
         }
 
         return ret;
@@ -735,6 +869,15 @@ public class Main extends Application {
         ret=ret.replaceAll("^OE","Ö");
         ret=ret.replaceAll("^UE","Ü");
         ret=ret.replaceAll("^SS","ß");
+        ret = ret.replaceAll("LESS", "<");
+        ret = ret.replaceAll("LCTL", "Ctrl");
+        ret = ret.replaceAll("LCTRL", "Ctrl");
+        ret = ret.replaceAll("LALT", "Alt");
+        ret = ret.replaceAll("RALT", "Alt");
+
+        //osx vs. windows vs linux?
+        ret = ret.replaceAll("LGUI", "Cmd");
+        ret = ret.replaceAll("RGUI", "Cmd");
         return ret;
     }
 }
