@@ -245,37 +245,38 @@ public class Main extends Application {
             label.setEffect(ds);
             final int i = idx;
             MenuItem clearMI = new MenuItem("clear");
-            clearMI.addEventHandler(ActionEvent.ACTION, new EventHandler<ActionEvent>() {
-                @Override
-                public void handle(ActionEvent event) {
-                    currentLayer.getLayout().get(i).setValue("KC_TRNS");
-                    unmarkKey();
-                    selectedGuiKey = null;
-                    layout(canvas);
+            clearMI.addEventHandler(ActionEvent.ACTION, event -> {
+                currentLayer.getLayout().get(i).setValue("KC_TRNS");
+                unmarkKey();
+                selectedGuiKey = null;
+                layout(canvas);
 
-                }
             });
-            label.addEventHandler(ContextMenuEvent.CONTEXT_MENU_REQUESTED, new EventHandler<ContextMenuEvent>() {
-                @Override
-                public void handle(ContextMenuEvent event) {
-                    if (selectedGuiKey != null) unmarkKey();
-                    markLabel(label);
-                    selectedGuiKey = label;
-                }
+            label.addEventHandler(ContextMenuEvent.CONTEXT_MENU_REQUESTED, event -> {
+                if (selectedGuiKey != null) unmarkKey();
+                markLabel(label);
+                selectedGuiKey = label;
             });
             MenuItem assignKey = new MenuItem("Assign key");
-            assignKey.addEventHandler(ActionEvent.ACTION, new EventHandler<ActionEvent>() {
-                @Override
-                public void handle(ActionEvent event) {
-                    currentLayer.getLayout().get(i).setValue("KC_TRNS");
-                    unmarkKey();
-                    selectedGuiKey = null;
-                    layout(canvas);
-                    doAssignKey(currentLayer.getLayout().get(i));
-                    layout(canvas);
-                }
+            assignKey.addEventHandler(ActionEvent.ACTION, event -> {
+                doAssignKey(currentLayer.getLayout().get(i));
+                layout(canvas);
             });
-            label.setContextMenu(new ContextMenu(clearMI, assignKey, new MenuItem("assign macro"), new MenuItem("assign LT"), new MenuItem("assign someting else")));
+
+            MenuItem assignMacro = new MenuItem("Assign Macro");
+            assignMacro.addEventHandler(ActionEvent.ACTION, event -> {
+
+            });
+            MenuItem assignLayerToggle = new MenuItem("Assign Layertoggle");
+            assignLayerToggle.addEventHandler(ActionEvent.ACTION, event -> {
+
+            });
+            MenuItem assignLT = new MenuItem("Assign LayerToggle/Type");
+            assignLT.addEventHandler(ActionEvent.ACTION, event -> {
+                doAssignLT(currentLayer.getLayout().get(i));
+                layout(canvas);
+            });
+            label.setContextMenu(new ContextMenu(clearMI, assignKey, assignLayerToggle, assignLT, assignMacro));
             label.addEventHandler(MouseEvent.MOUSE_CLICKED, event -> {
                 event.consume();
                 if (!event.getButton().equals(MouseButton.PRIMARY)) return;
@@ -482,30 +483,126 @@ public class Main extends Application {
 
     }
 
-    private void doAssignKey(Key k) {
-        List<String> choices = new ArrayList<>();
-        for (ErgodoxKeyCode c : ErgodoxKeyCode.values()) {
-            choices.add(c.name());
-        }
+    private void doAssignLT(Key k) {
+        List<String> choices = getKeyCodesList();
         String def = k.getValue();
-        if (def.contains("(")) {
+        if (def == null || def.contains("(")) {
             def = "KC_TRANS";
         }
-
         //describing choices
-        Map<String, String> prefixDescriptionByPrefix = new HashedMap();
-        prefixDescriptionByPrefix.put("ALL", "show all keys");
-        prefixDescriptionByPrefix.put("KC", "Default keys / US layout");
-        prefixDescriptionByPrefix.put("BL", "BL-Layout");
-        prefixDescriptionByPrefix.put("BP", "BP-Layout");
-        prefixDescriptionByPrefix.put("DE", "German keyboard layout");
-        prefixDescriptionByPrefix.put("DE_OSX", "German keyboard layout for Mac OSX");
-        prefixDescriptionByPrefix.put("DV", "DVORAK");
-        prefixDescriptionByPrefix.put("ES", "Spanish layout");
-        prefixDescriptionByPrefix.put("FR", "French layout");
-        prefixDescriptionByPrefix.put("NEO", "German NEO2 layout");
-        prefixDescriptionByPrefix.put("NO", "Norwegian layout");
-        prefixDescriptionByPrefix.put("UK", "United Kingdom");
+        Map<String, String> prefixDescriptionByPrefix = getPrefixDescriptionMap();
+
+        // Create the custom dialog.
+        Dialog<ButtonType> dialog = new Dialog<>();
+        dialog.setTitle("Choose Key");
+        dialog.setHeaderText("Key from available keys");
+
+        ButtonType assignButtonType = new ButtonType("Assign", ButtonBar.ButtonData.OK_DONE);
+        dialog.getDialogPane().getButtonTypes().addAll(assignButtonType, ButtonType.CANCEL);
+
+        GridPane grid = new GridPane();
+        grid.setHgap(10);
+        grid.setVgap(10);
+        grid.setPadding(new Insets(20, 150, 10, 10));
+
+        ComboBox<String> bx = new ComboBox<>();
+        for (String prfx : prefixDescriptionByPrefix.keySet()) {
+            bx.getItems().add(prfx + " - " + prefixDescriptionByPrefix.get(prfx));
+        }
+
+        ComboBox<String> keyCBX = new ComboBox<>();
+        keyCBX.setEditable(true);
+        keyCBX.getItems().addAll(choices);
+        ComboBoxAutocompleter autocompleterForKeys = new ComboBoxAutocompleter(keyCBX);
+        keyCBX.getSelectionModel().select(def);
+        String lastKey = applicationSettings.getProperty("last_key_prefix");
+        if (lastKey != null) {
+            bx.getSelectionModel().select(lastKey);
+            if (def.equals("KC_TRANS")) {
+                keyCBX.getEditor().setText(((String) lastKey).substring(0, lastKey.indexOf(" - ")));
+                Platform.runLater(() -> {
+                    autocompleterForKeys.updateSelection();
+                });
+            }
+        } else {
+            bx.getSelectionModel().select("ALL - " + prefixDescriptionByPrefix.get("ALL"));
+        }
+        ComboBox<String> layerCBX = new ComboBox<>();
+        layerCBX.setEditable(true);
+        if (ergodoxLayout.getLayers() == null) {
+            return;
+        } else {
+            layerCBX.getItems().addAll(ergodoxLayout.getLayers().keySet());
+        }
+        ComboBoxAutocompleter autocompleterForLayers = new ComboBoxAutocompleter(layerCBX);
+        layerCBX.getSelectionModel().select(def);
+
+
+        bx.addEventHandler(ActionEvent.ACTION, event -> {
+            String selectedItem = bx.getSelectionModel().getSelectedItem();
+            if (selectedItem.startsWith("ALL - ")) {
+                keyCBX.getEditor().setText("");
+            } else {
+                keyCBX.getEditor().setText(selectedItem.substring(0, selectedItem.indexOf(" - ")));
+            }
+            autocompleterForLayers.updateSelection();
+            Node assignButton = dialog.getDialogPane().lookupButton(assignButtonType);
+            assignButton.setDisable(true);
+            applicationSettings.setProperty("last_key_prefix", selectedItem);
+            saveConfig();
+        });
+
+        keyCBX.addEventHandler(ActionEvent.ACTION, event -> {
+            Node assignButton = dialog.getDialogPane().lookupButton(assignButtonType);
+            assignButton.setDisable(false);
+        });
+
+        layerCBX.addEventHandler(KeyEvent.KEY_PRESSED, event -> {
+            if (event.getCode().equals("ENTER")) {
+                k.setValue(keyCBX.getSelectionModel().getSelectedItem());
+                dialog.close();
+            }
+        });
+
+
+        grid.add(new Label("Prefix:"), 0, 0);
+        grid.add(bx, 1, 0);
+        grid.add(new Label("Key typed:"), 0, 2);
+        grid.add(keyCBX, 1, 2);
+        grid.add(new Label("Layer when held:"), 0, 1);
+        grid.add(layerCBX, 1, 1);
+
+// Enable/Disable login button depending on whether a username was entered.
+        Node assignButton = dialog.getDialogPane().lookupButton(assignButtonType);
+        assignButton.setDisable(true);
+
+
+        dialog.getDialogPane().setContent(grid);
+
+// Request focus on the username field by default.
+        Platform.runLater(() -> keyCBX.requestFocus());
+
+
+        Optional<ButtonType> result = dialog.showAndWait();
+
+        result.ifPresent(selectedKeyCode -> {
+            //Got selection ok
+            String selectedItem = keyCBX.getSelectionModel().getSelectedItem();
+            String selectedItem2 = layerCBX.getSelectionModel().getSelectedItem();
+            k.setValue("LT(" + selectedItem + "," + selectedItem2 + ")");
+        });
+
+    }
+
+    private void doAssignKey(Key k) {
+        List<String> choices = getKeyCodesList();
+
+        String def = k.getValue();
+        if (def == null || def.contains("(")) {
+            def = "KC_TRANS";
+        }
+        //describing choices
+        Map<String, String> prefixDescriptionByPrefix = getPrefixDescriptionMap();
 
         // Create the custom dialog.
         Dialog<ButtonType> dialog = new Dialog<>();
@@ -529,6 +626,7 @@ public class Main extends Application {
         bx2.setEditable(true);
         bx2.getItems().addAll(choices);
         ComboBoxAutocompleter ac = new ComboBoxAutocompleter(bx2);
+        bx2.getSelectionModel().select(def);
         String lastKey = applicationSettings.getProperty("last_key_prefix");
         if (lastKey != null) {
             bx.getSelectionModel().select(lastKey);
@@ -565,10 +663,37 @@ public class Main extends Application {
                 dialog.close();
             }
         });
+
+        ToggleGroup toggleGroup = new ToggleGroup();
+        RadioButton shiftCbx = new RadioButton("Shift");
+        RadioButton ctrlCbx = new RadioButton("Ctrl");
+        RadioButton altCbx = new RadioButton("Alt");
+        RadioButton cmdCbx = new RadioButton("Cmd");
+        RadioButton allCbx = new RadioButton("Hyper");
+        RadioButton mehCbx = new RadioButton("Meh");
+        cmdCbx.setToggleGroup(toggleGroup);
+        shiftCbx.setToggleGroup(toggleGroup);
+        altCbx.setToggleGroup(toggleGroup);
+        ctrlCbx.setToggleGroup(toggleGroup);
+        allCbx.setToggleGroup(toggleGroup);
+        mehCbx.setToggleGroup(toggleGroup);
+
+        CheckBox combinationLT = new CheckBox("if checked, modifier will issued when held, key when typed");
+
+        Pane p = new FlowPane();
+        p.getChildren().add(shiftCbx);
+        p.getChildren().add(ctrlCbx);
+        p.getChildren().add(altCbx);
+        p.getChildren().add(cmdCbx);
+        p.getChildren().add(allCbx);
+        p.getChildren().add(mehCbx);
+
         grid.add(new Label("Prefix:"), 0, 0);
         grid.add(bx, 1, 0);
         grid.add(new Label("Key:"), 0, 1);
         grid.add(bx2, 1, 1);
+        grid.add(p, 0, 2, 2, 1);
+        grid.add(combinationLT, 0, 3, 2, 1);
 
 // Enable/Disable login button depending on whether a username was entered.
         Node assignButton = dialog.getDialogPane().lookupButton(assignButtonType);
@@ -584,11 +709,68 @@ public class Main extends Application {
         Optional<ButtonType> result = dialog.showAndWait();
 
         result.ifPresent(selectedKeyCode -> {
-            //Got selection ok
-            k.setValue(bx2.getSelectionModel().getSelectedItem());
+
+            String selectedItem = bx2.getSelectionModel().getSelectedItem();
+            if (combinationLT.isSelected()) {
+                if (shiftCbx.isSelected()) {
+                    selectedItem = "SHFT_T(" + selectedItem + ")";
+                } else if (ctrlCbx.isSelected()) {
+                    selectedItem = "CTL_T(" + selectedItem + ")";
+                } else if (cmdCbx.isSelected()) {
+                    selectedItem = "GUI_T(" + selectedItem + ")";
+                } else if (allCbx.isSelected()) {
+                    selectedItem = "ALL_T(" + selectedItem + ")";
+                } else if (mehCbx.isSelected()) {
+                    selectedItem = "MEH_T(" + selectedItem + ")";
+                } else if (altCbx.isSelected()) {
+                    selectedItem = "ALT_T(" + selectedItem + ")";
+                }
+            } else {
+                //Got selection ok
+                if (shiftCbx.isSelected()) {
+                    selectedItem = "LSFT(" + selectedItem + ")";
+                } else if (ctrlCbx.isSelected()) {
+                    selectedItem = "LCTL(" + selectedItem + ")";
+                } else if (cmdCbx.isSelected()) {
+                    selectedItem = "LGUI(" + selectedItem + ")";
+                } else if (allCbx.isSelected()) {
+                    selectedItem = "ALL(" + selectedItem + ")";
+                } else if (mehCbx.isSelected()) {
+                    selectedItem = "MEH(" + selectedItem + ")";
+                } else if (altCbx.isSelected()) {
+                    selectedItem = "LALT(" + selectedItem + ")";
+                }
+            }
+            k.setValue(selectedItem);
         });
 
 
+    }
+
+    private Map<String, String> getPrefixDescriptionMap() {
+        Map<String, String> prefixDescriptionByPrefix = new HashedMap();
+        prefixDescriptionByPrefix.put("ALL", "show all keys");
+        prefixDescriptionByPrefix.put("KC", "Default keys / US layout");
+        prefixDescriptionByPrefix.put("BL", "BL-Layout");
+        prefixDescriptionByPrefix.put("BP", "BP-Layout");
+        prefixDescriptionByPrefix.put("DE", "German keyboard layout");
+        prefixDescriptionByPrefix.put("DE_OSX", "German keyboard layout for Mac OSX");
+        prefixDescriptionByPrefix.put("DV", "DVORAK");
+        prefixDescriptionByPrefix.put("ES", "Spanish layout");
+        prefixDescriptionByPrefix.put("FR", "French layout");
+        prefixDescriptionByPrefix.put("NEO", "German NEO2 layout");
+        prefixDescriptionByPrefix.put("NO", "Norwegian layout");
+        prefixDescriptionByPrefix.put("UK", "United Kingdom");
+        return prefixDescriptionByPrefix;
+    }
+
+    private List<String> getKeyCodesList() {
+        List<String> choices = new ArrayList<>();
+        for (ErgodoxKeyCode c : ErgodoxKeyCode.values()) {
+            choices.add(c.name());
+        }
+
+        return choices;
     }
 
     private void markLabel(Label label) {
@@ -865,11 +1047,11 @@ public class Main extends Application {
         } else if (kval.startsWith("ALL_T(")) {
             String s = kval.substring(6).replaceAll("\\)", "");
             s = getKeyDisplayName(s);
-            ret = "Type key: " + s + "\nHolding key: Hyper";
+            ret = "Type key: " + s + "\nHolding key: Hyper (=CMD+Ctrl+Shift+Alt)";
         } else if (kval.startsWith("MEH_T(")) {
             String s = kval.substring(6).replaceAll("\\)", "");
             s = getKeyDisplayName(s);
-            ret = "Type key: " + s + "\nHolding key: Meh";
+            ret = "Type key: " + s + "\nHolding key: Meh (=ALT+Ctrl+Shift)";
         } else if (kval.startsWith("ALT_T(")) {
             String s = kval.substring(6).replaceAll("\\)", "");
             s = getKeyDisplayName(s);
@@ -887,7 +1069,13 @@ public class Main extends Application {
             String lt[] = s.split(",");
             String layer = lt[0];
             String key = lt[1];
-            ret = "Type key: " + getKeyDisplayName(key) + "\nLayer " + layer + " when hold";
+            ret = "Type key: " + getKeyDisplayName(key) + "\nLayer " + layer + " when held";
+        } else if (kval.startsWith("ALL(")) {
+            String s = kval.substring(5).replaceAll("\\)", "");
+            ret = "Holds hyper keys and " + getKeyDisplayName(s);
+        } else if (kval.startsWith("MEH(")) {
+            String s = kval.substring(5).replaceAll("\\)", "");
+            ret = "Holds meh keys and " + getKeyDisplayName(s);
         } else if (kval.startsWith("LGUI(")) {
             String s = kval.substring(5).replaceAll("\\)", "");
             ret = "Holds both CMD and " + getKeyDisplayName(s);
@@ -961,6 +1149,12 @@ public class Main extends Application {
         } else if (kval.startsWith("LALT(")) {
             String s = kval.substring(5).replaceAll("\\)", "");
             ret = "ALT+" + getKeyDisplayName(s.substring(s.lastIndexOf('_') + 1));
+        } else if (kval.startsWith("ALL(")) {
+            String s = kval.substring(4).replaceAll("\\)", "");
+            ret = "Hyper+" + getKeyDisplayName(s.substring(s.lastIndexOf('_') + 1));
+        } else if (kval.startsWith("MEH(")) {
+            String s = kval.substring(4).replaceAll("\\)", "");
+            ret = "Meh+" + getKeyDisplayName(s.substring(s.lastIndexOf('_') + 1));
         } else if (kval.startsWith("LSFT(")) {
             String s = kval.substring(5).replaceAll("\\)", "");
             ret = "Shift+" + getKeyDisplayName(s.substring(s.lastIndexOf('_') + 1));
@@ -988,6 +1182,8 @@ public class Main extends Application {
     private String getKeyDisplayName(String ret) {
         ret = ret.replaceAll("LSFT", "Shift")
                 .replaceAll("RSFT", "Shift")
+                .replaceAll("LSHIFT", "Shift")
+                .replaceAll("RSHIFT", "Shift")
                 .replaceAll("KC_NO", "None")
                 .replaceAll("KC_", "");
         ret = ret.replaceAll("^AE", "Ä");
