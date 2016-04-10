@@ -56,6 +56,7 @@
 
 package de.caluga.ergodox.macros;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Pattern;
 
@@ -66,7 +67,7 @@ import java.util.regex.Pattern;
  * <p>
  * TODO: Add documentation here
  */
-public class LTMacro extends Macro {
+public class LongPressAndTypeMacro extends Macro {
     public final static Pattern pattern = Pattern.compile("if\\(record->event.pressed\\)\\{start=timer_read\\(\\);returnMACRO\\(([^;]+),END\\);\\}else\\{if\\(timer_elapsed\\(start\\)>([0-9]+)\\)\\{returnMACRO\\(([^;]+),END\\);\\}else\\{returnMACRO\\(([^;]+),END\\);\\}\\}");
 
     private List<MacroAction> longPressKeys;
@@ -82,6 +83,7 @@ public class LTMacro extends Macro {
     }
 
     public List<MacroAction> getLongPressKeys() {
+        if (longPressKeys == null) longPressKeys = new ArrayList<>();
         return longPressKeys;
     }
 
@@ -90,6 +92,7 @@ public class LTMacro extends Macro {
     }
 
     public List<MacroAction> getShortStrokes() {
+        if (shortStrokes == null) shortStrokes = new ArrayList<>();
         return shortStrokes;
     }
 
@@ -101,7 +104,7 @@ public class LTMacro extends Macro {
     public String getMacroGuiText() {
 
 
-        return "LT\n" + getName().replaceAll("^M_", "");
+        return "LongPress / Type\n" + getName().replaceAll("^M_", "");
     }
 
     @Override

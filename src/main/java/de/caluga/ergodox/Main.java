@@ -58,7 +58,10 @@ package de.caluga.ergodox; /**
  * Created by stephan on 29.03.16.
  */
 
+import de.caluga.ergodox.macros.LongPressAndTypeMacro;
 import de.caluga.ergodox.macros.Macro;
+import de.caluga.ergodox.macros.MacroAction;
+import de.caluga.ergodox.macros.TypeMacro;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.embed.swing.SwingFXUtils;
@@ -83,7 +86,6 @@ import javafx.scene.text.TextAlignment;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
-import org.apache.commons.collections.map.HashedMap;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
@@ -113,9 +115,6 @@ public class Main extends Application {
     private double scaleY = 1.0;
 
     private Label selectedGuiKey = null;
-    private int selectedKeyIndexInLayout = 0;
-
-    private List<ErgodoxLayoutLayer> layers = new ArrayList<>();
 
     private Button setSourceDir;
     private Label sourceDirLabel;
@@ -131,6 +130,7 @@ public class Main extends Application {
 
     private ComboBox<String> layerCombo;
     private Button createLayer;
+    private Button renameLayer;
     private Button deleteLayer;
 
     private ErgodoxLayoutLayer currentLayer;
@@ -191,9 +191,9 @@ public class Main extends Application {
 //        });
 //        layout(c.getGraphicsCocntext2D());
 
-
-        layers.add(new ErgodoxLayoutLayer("base"));
-        currentLayer = layers.get(0); //base
+        ergodoxLayout = new ErgodoxLayout();
+        currentLayer = new ErgodoxLayoutLayer("base"); //base
+        ergodoxLayout.getLayers().put(currentLayer.getName(), currentLayer);
 
 
         canvas = new Pane();
@@ -269,7 +269,8 @@ public class Main extends Application {
             });
             MenuItem assignLayerToggle = new MenuItem("Assign Layertoggle");
             assignLayerToggle.addEventHandler(ActionEvent.ACTION, event -> {
-
+                doAssingLayerToggle(currentLayer.getLayout().get(i));
+                layout(canvas);
             });
             MenuItem assignLT = new MenuItem("Assign LayerToggle/Type");
             assignLT.addEventHandler(ActionEvent.ACTION, event -> {
@@ -282,7 +283,6 @@ public class Main extends Application {
                 if (!event.getButton().equals(MouseButton.PRIMARY)) return;
 
                 Key k1 = currentLayer.getLayout().get(i);
-                selectedKeyIndexInLayout = i;
                 System.out.println("Key at " + i + " " + k1.getWidth() + "x" + k1.getHeight() + " value: " + k1.getValue());
                 if (selectedGuiKey != null) {
                     unmarkKey();
@@ -343,30 +343,36 @@ public class Main extends Application {
         layerCombo.addEventHandler(ActionEvent.ACTION, event -> {
             System.out.println("Selected!");
             if (layerCombo.getSelectionModel().getSelectedIndex() < 0) return;
-            currentLayer = layers.get(layerCombo.getSelectionModel().getSelectedIndex());
+            currentLayer = ergodoxLayout.getLayers().get(layerCombo.getSelectionModel().getSelectedItem());
             layout(canvas);
         });
 
         deleteLayer = new Button("delete layer");
         deleteLayer.addEventHandler(ActionEvent.ACTION, event -> {
-            if (layers.indexOf(currentLayer) == 0) {
+            if (!ergodoxLayout.getLayers().containsKey(currentLayer.getName())) {
                 System.err.println("Cannot delete base layer");
             } else {
-                layers.remove(currentLayer);
+                ergodoxLayout.getLayers().remove(currentLayer.getName());
                 layerCombo.getItems().remove(currentLayer.getName());
-                currentLayer = layers.get(0);
                 layerCombo.getSelectionModel().select(0);
+                currentLayer = ergodoxLayout.getLayers().get(layerCombo.getSelectionModel().getSelectedItem());
                 layout(canvas);
             }
         });
         createLayer = new Button("add layer");
         createLayer.addEventHandler(ActionEvent.ACTION, event -> {
-            ErgodoxLayoutLayer l = new ErgodoxLayoutLayer("Layer " + layers.size());
-            layers.add(l);
+            //TODO: Ask for Layer Name!
+            ErgodoxLayoutLayer l = new ErgodoxLayoutLayer("Layer " + ergodoxLayout.getLayers().size());
+            ergodoxLayout.getLayers().put(l.getName(), l);
             currentLayer = l;
             layerCombo.getItems().add(l.getName());
             layerCombo.getSelectionModel().select(layerCombo.getItems().size() - 1);
             layout(canvas);
+        });
+
+        renameLayer = new Button("rename layer");
+        renameLayer.addEventHandler(ActionEvent.ACTION, event -> {
+            //TODO: ask for layer name
         });
 
         legendStandardKey = new Label("std key");
@@ -389,32 +395,23 @@ public class Main extends Application {
         ledDesc = new Label("LEDs:");
         led1 = new Label("●");
         led1.setTextFill(Color.GRAY);
-        led1.addEventHandler(MouseEvent.MOUSE_CLICKED, new EventHandler<MouseEvent>() {
-            @Override
-            public void handle(MouseEvent event) {
-                currentLayer.setLed1(!currentLayer.isLed1());
-                layout(canvas);
-            }
+        led1.addEventHandler(MouseEvent.MOUSE_CLICKED, event -> {
+            currentLayer.setLed1(!currentLayer.isLed1());
+            layout(canvas);
         });
 
         led2 = new Label("●");
         led2.setTextFill(Color.GRAY);
-        led2.addEventHandler(MouseEvent.MOUSE_CLICKED, new EventHandler<MouseEvent>() {
-            @Override
-            public void handle(MouseEvent event) {
-                currentLayer.setLed2(!currentLayer.isLed2());
-                layout(canvas);
-            }
+        led2.addEventHandler(MouseEvent.MOUSE_CLICKED, event -> {
+            currentLayer.setLed2(!currentLayer.isLed2());
+            layout(canvas);
         });
 
         led3 = new Label("●");
         led3.setTextFill(Color.GRAY);
-        led3.addEventHandler(MouseEvent.MOUSE_CLICKED, new EventHandler<MouseEvent>() {
-            @Override
-            public void handle(MouseEvent event) {
-                currentLayer.setLed3(!currentLayer.isLed3());
-                layout(canvas);
-            }
+        led3.addEventHandler(MouseEvent.MOUSE_CLICKED, event -> {
+            currentLayer.setLed3(!currentLayer.isLed3());
+            layout(canvas);
         });
 
 //        canvas.getChildren().add(macroCombo);
@@ -427,6 +424,7 @@ public class Main extends Application {
         canvas.getChildren().add(createKeymap);
         canvas.getChildren().add(createLayer);
         canvas.getChildren().add(deleteLayer);
+        canvas.getChildren().add(renameLayer);
         canvas.getChildren().add(layerCombo);
         canvas.getChildren().add(legendLayerSwitch);
         canvas.getChildren().add(legendMacroCall);
@@ -440,7 +438,8 @@ public class Main extends Application {
         canvas.getChildren().add(led2);
         canvas.getChildren().add(led3);
         canvas.getChildren().add(keyDescription);
-        layout(canvas);
+        Platform.runLater(() -> layout(canvas));
+//        layout(canvas);
 
         root.getChildren().add(canvas);
 //        Circle circle = new Circle(50,Color.BLUE);
@@ -483,11 +482,63 @@ public class Main extends Application {
 
     }
 
+    private void doAssingLayerToggle(Key k) {
+        // Create the custom dialog.
+        Dialog<ButtonType> dialog = new Dialog<>();
+        dialog.setTitle("Choose Layer");
+        dialog.setHeaderText("available layers");
+
+        ButtonType assignButtonType = new ButtonType("Assign toggle", ButtonBar.ButtonData.OK_DONE);
+        dialog.getDialogPane().getButtonTypes().addAll(assignButtonType, ButtonType.CANCEL);
+
+        GridPane grid = new GridPane();
+        grid.setHgap(10);
+        grid.setVgap(10);
+        grid.setPadding(new Insets(20, 150, 10, 10));
+
+        ComboBox<String> bx = new ComboBox<>();
+        for (String layerName : ergodoxLayout.getLayers().keySet()) {
+            bx.getItems().add(layerName);
+        }
+        bx.addEventHandler(KeyEvent.KEY_PRESSED, event -> {
+            if (event.getCode().equals("ENTER")) {
+                k.setValue("TG(" + bx.getSelectionModel().getSelectedItem() + ")");
+                dialog.close();
+            }
+        });
+
+        grid.add(new Label("Layer:"), 0, 0);
+        grid.add(bx, 1, 0);
+
+// Enable/Disable login button depending on whether a username was entered.
+        Node assignButton = dialog.getDialogPane().lookupButton(assignButtonType);
+        assignButton.setDisable(true);
+
+        bx.addEventHandler(ActionEvent.ACTION, event -> {
+            assignButton.setDisable(false);
+        });
+
+        dialog.getDialogPane().setContent(grid);
+
+// Request focus on the username field by default.
+        Platform.runLater(() -> bx.requestFocus());
+
+
+        Optional<ButtonType> result = dialog.showAndWait();
+
+        result.ifPresent(selectedKeyCode -> {
+            //Got selection ok
+            String selectedItem = bx.getSelectionModel().getSelectedItem();
+            k.setValue("TG(" + selectedItem + ")");
+        });
+
+    }
+
     private void doAssignLT(Key k) {
         List<String> choices = getKeyCodesList();
         String def = k.getValue();
         if (def == null || def.contains("(")) {
-            def = "KC_TRANS";
+            def = "KC_TRNS";
         }
         //describing choices
         Map<String, String> prefixDescriptionByPrefix = getPrefixDescriptionMap();
@@ -518,7 +569,7 @@ public class Main extends Application {
         String lastKey = applicationSettings.getProperty("last_key_prefix");
         if (lastKey != null) {
             bx.getSelectionModel().select(lastKey);
-            if (def.equals("KC_TRANS")) {
+            if (def.equals("KC_TRNS")) {
                 keyCBX.getEditor().setText(((String) lastKey).substring(0, lastKey.indexOf(" - ")));
                 Platform.runLater(() -> {
                     autocompleterForKeys.updateSelection();
@@ -599,7 +650,7 @@ public class Main extends Application {
 
         String def = k.getValue();
         if (def == null || def.contains("(")) {
-            def = "KC_TRANS";
+            def = "KC_TRNS";
         }
         //describing choices
         Map<String, String> prefixDescriptionByPrefix = getPrefixDescriptionMap();
@@ -664,29 +715,29 @@ public class Main extends Application {
             }
         });
 
-        ToggleGroup toggleGroup = new ToggleGroup();
-        RadioButton shiftCbx = new RadioButton("Shift");
-        RadioButton ctrlCbx = new RadioButton("Ctrl");
-        RadioButton altCbx = new RadioButton("Alt");
-        RadioButton cmdCbx = new RadioButton("Cmd");
-        RadioButton allCbx = new RadioButton("Hyper");
-        RadioButton mehCbx = new RadioButton("Meh");
-        cmdCbx.setToggleGroup(toggleGroup);
-        shiftCbx.setToggleGroup(toggleGroup);
-        altCbx.setToggleGroup(toggleGroup);
-        ctrlCbx.setToggleGroup(toggleGroup);
-        allCbx.setToggleGroup(toggleGroup);
-        mehCbx.setToggleGroup(toggleGroup);
+//        ToggleGroup toggleGroup = new ToggleGroup();
 
+        CheckBox shiftCbx = new CheckBox("Shift");
+        CheckBox ctrlCbx = new CheckBox("Ctrl");
+        CheckBox altCbx = new CheckBox("Alt");
+        CheckBox cmdCbx = new CheckBox("Cmd");
+//        cmdCbx.setToggleGroup(toggleGroup);
+//        shiftCbx.setToggleGroup(toggleGroup);
+//        altCbx.setToggleGroup(toggleGroup);
+//        ctrlCbx.setToggleGroup(toggleGroup);
+
+        CheckBox[] checkBoxes = new CheckBox[]{shiftCbx, ctrlCbx, altCbx, cmdCbx};
         CheckBox combinationLT = new CheckBox("if checked, modifier will issued when held, key when typed");
-
+        Label desc = new Label("when more than one modifier is selected, a macro will be created!");
         Pane p = new FlowPane();
-        p.getChildren().add(shiftCbx);
-        p.getChildren().add(ctrlCbx);
-        p.getChildren().add(altCbx);
-        p.getChildren().add(cmdCbx);
-        p.getChildren().add(allCbx);
-        p.getChildren().add(mehCbx);
+        for (CheckBox cbx : checkBoxes) {
+            p.getChildren().add(cbx);
+        }
+        Map<CheckBox, ErgodoxKeyCode> modifierByCBox = new HashMap();
+        modifierByCBox.put(shiftCbx, ErgodoxKeyCode.KC_LSFT);
+        modifierByCBox.put(ctrlCbx, ErgodoxKeyCode.KC_LCTL);
+        modifierByCBox.put(altCbx, ErgodoxKeyCode.KC_LALT);
+        modifierByCBox.put(cmdCbx, ErgodoxKeyCode.KC_LGUI);
 
         grid.add(new Label("Prefix:"), 0, 0);
         grid.add(bx, 1, 0);
@@ -694,6 +745,7 @@ public class Main extends Application {
         grid.add(bx2, 1, 1);
         grid.add(p, 0, 2, 2, 1);
         grid.add(combinationLT, 0, 3, 2, 1);
+        grid.add(desc, 0, 4, 2, 1);
 
 // Enable/Disable login button depending on whether a username was entered.
         Node assignButton = dialog.getDialogPane().lookupButton(assignButtonType);
@@ -709,36 +761,104 @@ public class Main extends Application {
         Optional<ButtonType> result = dialog.showAndWait();
 
         result.ifPresent(selectedKeyCode -> {
+            int cnt = 0;
+            for (CheckBox b : checkBoxes) {
+                if (b.isSelected()) cnt++;
+            }
 
             String selectedItem = bx2.getSelectionModel().getSelectedItem();
             if (combinationLT.isSelected()) {
-                if (shiftCbx.isSelected()) {
-                    selectedItem = "SHFT_T(" + selectedItem + ")";
-                } else if (ctrlCbx.isSelected()) {
-                    selectedItem = "CTL_T(" + selectedItem + ")";
-                } else if (cmdCbx.isSelected()) {
-                    selectedItem = "GUI_T(" + selectedItem + ")";
-                } else if (allCbx.isSelected()) {
+                if (cnt == 4) {
+                    //Hyper
                     selectedItem = "ALL_T(" + selectedItem + ")";
-                } else if (mehCbx.isSelected()) {
+                } else if (cnt == 3 && shiftCbx.isSelected() && altCbx.isSelected() && ctrlCbx.isSelected()) {
+                    //Meh
                     selectedItem = "MEH_T(" + selectedItem + ")";
-                } else if (altCbx.isSelected()) {
-                    selectedItem = "ALT_T(" + selectedItem + ")";
+                } else if (cnt <= 3 && cnt > 1) {
+                    //Macro implementation
+                    LongPressAndTypeMacro lp = new LongPressAndTypeMacro();
+                    //Setting modifiers for longpress
+                    for (CheckBox cbx : checkBoxes) {
+                        if (cbx.isSelected()) {
+                            //Pressing modifiers
+                            MacroAction a = new MacroAction();
+                            a.setCode(modifierByCBox.get(cbx));
+                            a.setAction(MacroAction.Action.DOWN);
+                            a.setWait(0);
+                            lp.getLongPressKeys().add(a);
+
+                            //releasing them
+                            a = new MacroAction();
+                            a.setCode(modifierByCBox.get(cbx));
+                            a.setAction(MacroAction.Action.UP);
+                            lp.getShortStrokes().add(a);
+                        }
+
+                    }
+                    //typing _the_ key
+                    MacroAction keyType = new MacroAction();
+                    keyType.setCode(ErgodoxKeyCode.valueOf(selectedItem));
+                    keyType.setAction(MacroAction.Action.TYPE);
+                    lp.getShortStrokes().add(keyType);
+
+                    lp.setName("M_Key_" + selectedItem + "_MODS");
+                    lp.setTimeout(150);
+                    ergodoxLayout.getMacros().put(lp.getName(), lp);
+
+                    selectedItem = "M(" + lp.getName() + ")";
+
+                } else if (cnt == 1) {
+                    if (shiftCbx.isSelected()) {
+                        selectedItem = "SHFT_T(" + selectedItem + ")";
+                    } else if (ctrlCbx.isSelected()) {
+                        selectedItem = "CTL_T(" + selectedItem + ")";
+                    } else if (cmdCbx.isSelected()) {
+                        selectedItem = "GUI_T(" + selectedItem + ")";
+                    } else if (altCbx.isSelected()) {
+                        selectedItem = "ALT_T(" + selectedItem + ")";
+                    }
                 }
             } else {
-                //Got selection ok
-                if (shiftCbx.isSelected()) {
-                    selectedItem = "LSFT(" + selectedItem + ")";
-                } else if (ctrlCbx.isSelected()) {
-                    selectedItem = "LCTL(" + selectedItem + ")";
-                } else if (cmdCbx.isSelected()) {
-                    selectedItem = "LGUI(" + selectedItem + ")";
-                } else if (allCbx.isSelected()) {
-                    selectedItem = "ALL(" + selectedItem + ")";
-                } else if (mehCbx.isSelected()) {
-                    selectedItem = "MEH(" + selectedItem + ")";
-                } else if (altCbx.isSelected()) {
-                    selectedItem = "LALT(" + selectedItem + ")";
+                if (cnt == 1) {
+                    //Got selection ok
+                    if (shiftCbx.isSelected()) {
+                        selectedItem = "LSFT(" + selectedItem + ")";
+                    } else if (ctrlCbx.isSelected()) {
+                        selectedItem = "LCTL(" + selectedItem + ")";
+                    } else if (cmdCbx.isSelected()) {
+                        selectedItem = "LGUI(" + selectedItem + ")";
+                    } else if (altCbx.isSelected()) {
+                        selectedItem = "LALT(" + selectedItem + ")";
+                    }
+                } else if (cnt > 1) {
+                    //macro necessary
+                    TypeMacro tm = new TypeMacro();
+                    for (CheckBox cbx : checkBoxes) {
+                        if (cbx.isSelected()) {
+                            MacroAction a = new MacroAction();
+                            a.setAction(MacroAction.Action.DOWN);
+                            a.setCode(modifierByCBox.get(cbx));
+                            tm.getActions().add(a);
+                        }
+                    }
+                    //Typing the key
+                    MacroAction type = new MacroAction();
+                    type.setCode(ErgodoxKeyCode.valueOf(selectedItem));
+                    type.setAction(MacroAction.Action.TYPE);
+                    tm.getActions().add(type);
+                    //releasing modifiers
+                    for (CheckBox cbx : checkBoxes) {
+                        if (cbx.isSelected()) {
+                            MacroAction a = new MacroAction();
+                            a.setAction(MacroAction.Action.UP);
+                            a.setCode(modifierByCBox.get(cbx));
+                            tm.getActions().add(a);
+                        }
+                    }
+
+                    tm.setName("M_MOD_" + selectedItem);
+                    ergodoxLayout.getMacros().put(tm.getName(), tm);
+                    selectedItem = "M(" + tm.getName() + ")";
                 }
             }
             k.setValue(selectedItem);
@@ -748,7 +868,7 @@ public class Main extends Application {
     }
 
     private Map<String, String> getPrefixDescriptionMap() {
-        Map<String, String> prefixDescriptionByPrefix = new HashedMap();
+        Map<String, String> prefixDescriptionByPrefix = new HashMap();
         prefixDescriptionByPrefix.put("ALL", "show all keys");
         prefixDescriptionByPrefix.put("KC", "Default keys / US layout");
         prefixDescriptionByPrefix.put("BL", "BL-Layout");
@@ -876,13 +996,11 @@ public class Main extends Application {
         KeymapParser parser = new KeymapParser();
         ergodoxLayout = parser.parse(selected.getAbsolutePath() + "/keymap.c");
         layerCombo.getItems().clear();
-        layers.clear();
         for (String k : ergodoxLayout.getLayers().keySet()) {
             layerCombo.getItems().add(0, k);
-            layers.add(0, ergodoxLayout.getLayers().get(k));
         }
-        currentLayer = layers.get(0);
         layerCombo.getSelectionModel().select(0);
+        currentLayer = ergodoxLayout.getLayers().get(layerCombo.getSelectionModel().getSelectedItem());
 
 
         layout(canvas);
@@ -1006,8 +1124,10 @@ public class Main extends Application {
         reopenBtn.relocate(currentWindowWidth / 2 + 50, currentWindowHeight - 30);
 
         layerCombo.relocate(5, 20);
-        createLayer.relocate(150, 5);
-        deleteLayer.relocate(150, 40);
+        double cx = layerCombo.getWidth();
+        renameLayer.relocate(cx + 20, 20);
+        createLayer.relocate(cx + 120, 20);
+        deleteLayer.relocate(cx + 200, 20);
 
         legendLayerSwitch.relocate(20, currentWindowHeight - 100);
         legendMacroCall.relocate(20, currentWindowHeight - 120);
@@ -1149,12 +1269,6 @@ public class Main extends Application {
         } else if (kval.startsWith("LALT(")) {
             String s = kval.substring(5).replaceAll("\\)", "");
             ret = "ALT+" + getKeyDisplayName(s.substring(s.lastIndexOf('_') + 1));
-        } else if (kval.startsWith("ALL(")) {
-            String s = kval.substring(4).replaceAll("\\)", "");
-            ret = "Hyper+" + getKeyDisplayName(s.substring(s.lastIndexOf('_') + 1));
-        } else if (kval.startsWith("MEH(")) {
-            String s = kval.substring(4).replaceAll("\\)", "");
-            ret = "Meh+" + getKeyDisplayName(s.substring(s.lastIndexOf('_') + 1));
         } else if (kval.startsWith("LSFT(")) {
             String s = kval.substring(5).replaceAll("\\)", "");
             ret = "Shift+" + getKeyDisplayName(s.substring(s.lastIndexOf('_') + 1));

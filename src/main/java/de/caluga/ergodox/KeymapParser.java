@@ -57,7 +57,6 @@
 package de.caluga.ergodox;
 
 import de.caluga.ergodox.macros.*;
-import org.apache.commons.collections.map.HashedMap;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
@@ -189,7 +188,7 @@ public class KeymapParser {
         idx = getTextBetweenBraces(idx, brCount);
         String macros = fileContent.substring(start, idx);
 
-        Map<String, Macro> keymapMacros = new HashedMap();
+        Map<String, Macro> keymapMacros = new HashMap();
 
         while (macros.length() > 0) {
             idx = macros.indexOf("case ");
@@ -202,7 +201,7 @@ public class KeymapParser {
             String normalizedMacroContent = originalMacroContent.replaceAll("[\n\t ]", "");
             Matcher mTypingMacro = TypeMacro.pattern.matcher(normalizedMacroContent);
             Matcher mLayerToggleMacro = LayerToggleMacro.pattern.matcher(normalizedMacroContent);
-            Matcher mLTTypeMacro = LTMacro.pattern.matcher(normalizedMacroContent);
+            Matcher mLTTypeMacro = LongPressAndTypeMacro.pattern.matcher(normalizedMacroContent);
             Matcher mHoldKeyMacro = HoldKeyMacro.pattern.matcher(normalizedMacroContent);
             Macro macro;
             if (mTypingMacro.matches()) {
@@ -224,7 +223,7 @@ public class KeymapParser {
                 macro = hkm;
             } else if (mLTTypeMacro.matches()) {
                 System.out.println("Got LTType Macro; onPress: " + mLTTypeMacro.group(1) + "  timeout: " + mLTTypeMacro.group(2) + "  release: " + mLTTypeMacro.group(3) + "  type: " + mLTTypeMacro.group(4));
-                LTMacro lt = new LTMacro();
+                LongPressAndTypeMacro lt = new LongPressAndTypeMacro();
                 List<MacroAction> lst = parseActionList(mLTTypeMacro.group(1));
                 lt.setLongPressKeys(lst);
                 lt.setTimeout(Integer.parseInt(mLTTypeMacro.group(2)));
