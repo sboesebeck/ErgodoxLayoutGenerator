@@ -119,8 +119,8 @@ public class Main extends Application {
     private int initialWindowWidth;
     private int initialWindowHeight;
     private double currentWindowHeight;
-//    private ComboBox<String> macroCombo;
-private double currentWindowWidth;
+    //    private ComboBox<String> macroCombo;
+    private double currentWindowWidth;
     private ComboBox<String> layerCombo;
     private Button createLayer;
     private Button renameLayer;
@@ -190,34 +190,8 @@ private double currentWindowWidth;
 
         StackPane root = new StackPane();
 
-//        Canvas c = new Canvas(800, 600);
-//        c.addEventHandler(MouseEvent.MOUSE_CLICKED, new EventHandler<MouseEvent>() {
-//            public void handle(MouseEvent event) {
-//                double x = event.getX();
-//                double y = event.getY();
-//
-//                boolean rightHalf=x>rightHalfOffset;
-//                if (rightHalf){
-//                    x-=rightHalfOffset;
-//                }
-//                int column=(int)((x-offsetX)/(pixelWidth +pixelOffset));
-//                int row=(int)((y-offsetY)/(pixelHeight +pixelOffset));
-//                System.out.println("Clicked! "+ x +"/"+ y+" == row: "+row+"  col: "+column);
-//
-//                int indexInLayout=0;
-//                for (int i=0;i<row;i++){
-//                    indexInLayout +=layers.getRowLength().get(i);
-//                }
-//                if (rightHalf) indexInLayout+=layers.keysOnHalf();
-//                Key k=layers.getLayout().get(indexInLayout);
-//                System.out.println("Got key; "+k.getWidth()+"x"+k.getHeight());
-//
-//            }
-//        });
-//        layout(c.getGraphicsCocntext2D());
-
         ergodoxLayout = new ErgodoxLayout();
-        currentLayer = new ErgodoxLayoutLayer("base"); //base
+        currentLayer = new ErgodoxLayoutLayer("Base"); //base
         ergodoxLayout.getLayers().put(currentLayer.getName(), currentLayer);
 
 
@@ -274,7 +248,8 @@ private double currentWindowWidth;
                 currentLayer.getLayout().get(i).setValue("KC_TRNS");
                 unmarkKey();
                 selectedGuiKey = null;
-                layout(canvas);
+                Platform.runLater(() -> layout(canvas));
+                ;
 
             });
             label.addEventHandler(ContextMenuEvent.CONTEXT_MENU_REQUESTED, event -> {
@@ -285,23 +260,27 @@ private double currentWindowWidth;
             MenuItem assignKey = new MenuItem("Assign key");
             assignKey.addEventHandler(ActionEvent.ACTION, event -> {
                 doAssignKey(currentLayer.getLayout().get(i));
-                layout(canvas);
+                Platform.runLater(() -> layout(canvas));
+                ;
             });
 
             MenuItem assignMacro = new MenuItem("Assign Macro");
             assignMacro.addEventHandler(ActionEvent.ACTION, event -> {
                 doAssignMacro(currentLayer.getLayout().get(i));
-                layout(canvas);
+                Platform.runLater(() -> layout(canvas));
+                ;
             });
             MenuItem assignLayerToggle = new MenuItem("Assign Layertoggle");
             assignLayerToggle.addEventHandler(ActionEvent.ACTION, event -> {
                 doAssingLayerToggle(currentLayer.getLayout().get(i));
-                layout(canvas);
+                Platform.runLater(() -> layout(canvas));
+                ;
             });
             MenuItem assignLT = new MenuItem("Assign LayerToggle/Type");
             assignLT.addEventHandler(ActionEvent.ACTION, event -> {
                 doAssignLT(currentLayer.getLayout().get(i));
-                layout(canvas);
+                Platform.runLater(() -> layout(canvas));
+                ;
             });
             label.setContextMenu(new ContextMenu(clearMI, assignKey, assignLayerToggle, assignLT, assignMacro));
             label.addEventHandler(MouseEvent.MOUSE_CLICKED, event -> {
@@ -370,35 +349,69 @@ private double currentWindowWidth;
             System.out.println("Selected!");
             if (layerCombo.getSelectionModel().getSelectedIndex() < 0) return;
             currentLayer = ergodoxLayout.getLayers().get(layerCombo.getSelectionModel().getSelectedItem());
-            layout(canvas);
+            Platform.runLater(() -> layout(canvas));
+            ;
         });
 
         deleteLayer = new Button("delete layer");
         deleteLayer.addEventHandler(ActionEvent.ACTION, event -> {
             if (!ergodoxLayout.getLayers().containsKey(currentLayer.getName())) {
-                System.err.println("Cannot delete base layer");
+                Alert alert = new Alert(Alert.AlertType.ERROR);
+                alert.setTitle("Error Dialog");
+                alert.setHeaderText("Cannot delete layer");
+                alert.setContentText("Internal error - layer to delete is unknown!");
+
+            } else if (layerCombo.getItems().size() == 1) {
+                Alert alert = new Alert(Alert.AlertType.ERROR);
+                alert.setTitle("Error Dialog");
+                alert.setHeaderText("Cannot delete layer");
+                alert.setContentText("An ergodox layour needs at least one layer!");
+
+                alert.showAndWait();
             } else {
                 ergodoxLayout.getLayers().remove(currentLayer.getName());
                 layerCombo.getItems().remove(currentLayer.getName());
                 layerCombo.getSelectionModel().select(0);
-                currentLayer = ergodoxLayout.getLayers().get(layerCombo.getSelectionModel().getSelectedItem());
-                layout(canvas);
+                currentLayer = ergodoxLayout.getLayers().get(layerCombo.getItems().get(0));
+                Platform.runLater(() -> layout(canvas));
             }
         });
         createLayer = new Button("add layer");
         createLayer.addEventHandler(ActionEvent.ACTION, event -> {
-            //TODO: Ask for Layer Name!
-            ErgodoxLayoutLayer l = new ErgodoxLayoutLayer("Layer " + ergodoxLayout.getLayers().size());
+            String layerName = "Layer_" + ergodoxLayout.getLayers().size();
+            while (true) {
+                layerName = askForLayerName(layerName);
+                if (layerName == null) return;
+                if (ergodoxLayout.getLayers().get(layerName) != null) {
+                    Alert alert = new Alert(Alert.AlertType.ERROR);
+                    alert.setTitle("Error Dialog");
+                    alert.setHeaderText("Layer name not unique");
+                    alert.setContentText("layer names need to be unique! A layer with name " + layerName + " already exists!");
+
+                    alert.showAndWait();
+                } else {
+                    break;
+                }
+            }
+            ErgodoxLayoutLayer l = new ErgodoxLayoutLayer(layerName);
             ergodoxLayout.getLayers().put(l.getName(), l);
             currentLayer = l;
             layerCombo.getItems().add(l.getName());
             layerCombo.getSelectionModel().select(layerCombo.getItems().size() - 1);
-            layout(canvas);
+            Platform.runLater(() -> layout(canvas));
+            ;
         });
 
         renameLayer = new Button("rename layer");
         renameLayer.addEventHandler(ActionEvent.ACTION, event -> {
-            //TODO: ask for layer name
+            String layerName = askForLayerName(currentLayer.getName());
+            if (layerName != null) {
+                layerCombo.getItems().remove(currentLayer.getName());
+                currentLayer.setName(layerName);
+                layerCombo.getItems().add(layerName);
+                layerCombo.getSelectionModel().select(layerName);
+                Platform.runLater(() -> layout(canvas));
+            }
         });
 
         legendStandardKey = new Label("std key");
@@ -423,21 +436,24 @@ private double currentWindowWidth;
         led1.setTextFill(Color.GRAY);
         led1.addEventHandler(MouseEvent.MOUSE_CLICKED, event -> {
             currentLayer.setLed1(!currentLayer.isLed1());
-            layout(canvas);
+            Platform.runLater(() -> layout(canvas));
+            ;
         });
 
         led2 = new Label("●");
         led2.setTextFill(Color.GRAY);
         led2.addEventHandler(MouseEvent.MOUSE_CLICKED, event -> {
             currentLayer.setLed2(!currentLayer.isLed2());
-            layout(canvas);
+            Platform.runLater(() -> layout(canvas));
+            ;
         });
 
         led3 = new Label("●");
         led3.setTextFill(Color.GRAY);
         led3.addEventHandler(MouseEvent.MOUSE_CLICKED, event -> {
             currentLayer.setLed3(!currentLayer.isLed3());
-            layout(canvas);
+            Platform.runLater(() -> layout(canvas));
+            ;
         });
 
 //        canvas.getChildren().add(macroCombo);
@@ -488,7 +504,8 @@ private double currentWindowWidth;
                 scaleX = currentWindowWidth / (double) initialWindowWidth;
                 rightHalfOffset = (int) (currentWindowWidth / 2);
 //                    System.out.println("Drawing with new scale of "+scaleX);
-                layout(canvas);
+                Platform.runLater(() -> layout(canvas));
+                ;
 
             }
         });
@@ -497,7 +514,8 @@ private double currentWindowWidth;
             currentWindowHeight = newValue.doubleValue();
             if (currentWindowHeight > initialWindowHeight) {
                 scaleY = currentWindowHeight / (double) initialWindowHeight;
-                layout(canvas);
+                Platform.runLater(() -> layout(canvas));
+                ;
 
             }
         });
@@ -506,6 +524,36 @@ private double currentWindowWidth;
 
         readConfig();
 
+    }
+
+    private String askForLayerName(String o) {
+        while (true) {
+            TextInputDialog dialog;
+            if (o != null) {
+                dialog = new TextInputDialog(o);
+            } else {
+                dialog = new TextInputDialog("");
+            }
+            dialog.setTitle("Choose your layer name");
+            dialog.setHeaderText("Layer name");
+
+            Optional<java.lang.String> result = dialog.showAndWait();
+            if (result.isPresent()) {
+                o = result.get();
+                if (!o.matches("^[a-zA-Z0-9_]+$")) {
+                    Alert alert = new Alert(Alert.AlertType.ERROR);
+                    alert.setTitle("Error Dialog");
+                    alert.setHeaderText("Layername malformed");
+                    alert.setContentText("A layername must only contains a-z, A-Z, 0-9 and _!");
+
+                    alert.showAndWait();
+                    continue;
+                }
+                return o;
+            }
+
+            return null;
+        }
     }
 
     private void doAssignMacro(Key k) {
@@ -632,7 +680,8 @@ private double currentWindowWidth;
         currentLayer = ergodoxLayout.getLayers().get(layerCombo.getSelectionModel().getSelectedItem());
 
 
-        layout(canvas);
+        Platform.runLater(() -> layout(canvas));
+        ;
         primaryStage.setTitle(selected.getName());
         currentKeymap = selected.getName();
     }

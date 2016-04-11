@@ -54,81 +54,127 @@
  * If the Library as you received it specifies that a proxy can decide whether future versions of the GNU Lesser General Public License shall apply, that proxy's public statement of acceptance of any version is permanent authorization for you to choose that version for the Library.
  */
 
-package de.caluga.ergodox;/**
- * Created by stephan on 11.04.16.
- */
+package de.caluga.ergodox.macrodialog;
 
-import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.geometry.Insets;
-import javafx.scene.Node;
 import javafx.scene.control.*;
-import javafx.scene.input.KeyEvent;
+import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.GridPane;
 
 import java.util.Optional;
 
 /**
- * TODO: Add Documentation here
- **/
-public class AssignLayerToggleDialog {
-    private final ErgodoxLayout ergodoxLayout;
+ * User: Stephan Bösebeck
+ * Date: 11.04.16
+ * Time: 23:06
+ * <p>
+ * TODO: Add documentation here
+ */
+public class MacroEditor {
 
-    public AssignLayerToggleDialog(ErgodoxLayout l) {
-        this.ergodoxLayout = l;
-    }
-
-    public void show(Key k) {
+    public void showEditor() {
         // Create the custom dialog.
         Dialog<ButtonType> dialog = new Dialog<>();
-        dialog.setTitle("Choose Layer");
-        dialog.setHeaderText("available layers");
-
-        ButtonType assignButtonType = new ButtonType("Assign toggle", ButtonBar.ButtonData.OK_DONE);
+        dialog.setTitle("Edit Macro");
+        dialog.setHeaderText("Macro Editor");
+        dialog.setResizable(true);
+        ButtonType assignButtonType = new ButtonType("Save", ButtonBar.ButtonData.OK_DONE);
         dialog.getDialogPane().getButtonTypes().addAll(assignButtonType, ButtonType.CANCEL);
 
         GridPane grid = new GridPane();
         grid.setHgap(10);
-        grid.setVgap(10);
+        grid.setVgap(20);
         grid.setPadding(new Insets(20, 150, 10, 10));
 
-        ComboBox<String> bx = new ComboBox<>();
-        for (String layerName : ergodoxLayout.getLayers().keySet()) {
-            bx.getItems().add(layerName);
-        }
-        bx.addEventHandler(KeyEvent.KEY_PRESSED, event -> {
-            if (event.getCode().equals("ENTER")) {
-                k.setValue("TG(" + bx.getSelectionModel().getSelectedItem() + ")");
-                dialog.close();
-            }
+        ToggleGroup tg = new ToggleGroup();
+        RadioButton typeMacroRB = new RadioButton("Typing macro");
+        typeMacroRB.setToggleGroup(tg);
+        RadioButton longPMacroRB = new RadioButton("Long press type macro");
+        longPMacroRB.setToggleGroup(tg);
+        RadioButton holdKeyMacroRB = new RadioButton("Hold key macro");
+        holdKeyMacroRB.setToggleGroup(tg);
+        RadioButton customMacro = new RadioButton("Custom macro");
+        customMacro.setToggleGroup(tg);
+        GridPane content = new GridPane();
+        content.setHgap(10);
+        content.setVgap(10);
+
+        FlowPane p = new FlowPane(10, 10);
+        p.getChildren().add(typeMacroRB);
+        p.getChildren().add(longPMacroRB);
+        p.getChildren().add(holdKeyMacroRB);
+        p.getChildren().add(customMacro);
+
+        typeMacroRB.addEventHandler(ActionEvent.ACTION, event -> {
+            showTypeMacro(content);
+            content.requestLayout();
+            p.requestLayout();
         });
-        Node assignButton = dialog.getDialogPane().lookupButton(assignButtonType);
-        assignButton.setDisable(true);
-        String assignedValue = k.getValue();
-        if (assignedValue != null && assignedValue.startsWith("TG(")) {
-            bx.getSelectionModel().select(assignedValue.substring(3, assignedValue.length() - 1));
-            assignButton.setDisable(false);
-        }
-        grid.add(new Label("Layer:"), 0, 0);
-        grid.add(bx, 1, 0);
+
+        longPMacroRB.addEventHandler(ActionEvent.ACTION, event -> {
+            showLongPressMacro(content);
+        });
+
+        holdKeyMacroRB.addEventHandler(ActionEvent.ACTION, event -> {
+            showHoldKeyMacro(content);
+        });
+
+        customMacro.addEventHandler(ActionEvent.ACTION, event -> {
+            showCustomMacro(content);
+        });
 
 
-        bx.addEventHandler(ActionEvent.ACTION, event -> {
-            assignButton.setDisable(false);
-        });
+        grid.add(new Label("Type:"), 0, 0);
+        grid.add(p, 1, 0);
+        grid.add(content, 0, 1, 2, 1);
+
+
+//        grid.add(new Label("Key typed:"), 0, 2);
+//        grid.add(keyCBX, 1, 2);
+//        grid.add(new Label("Layer when held:"), 0, 1);
+//        grid.add(layerCBX, 1, 1);
+
+// Enable/Disable login button depending on whether a username was entered.
+
 
         dialog.getDialogPane().setContent(grid);
 
-        Platform.runLater(() -> bx.requestFocus());
+// Request focus on the username field by default.
+//        Platform.runLater(() -> keyCBX.requestFocus());
 
 
         Optional<ButtonType> result = dialog.showAndWait();
 
         result.ifPresent(btn -> {
-            if (btn.getButtonData().equals(ButtonBar.ButtonData.CANCEL_CLOSE)) return;
             //Got selection ok
-            String selectedItem = bx.getSelectionModel().getSelectedItem();
-            k.setValue("TG(" + selectedItem + ")");
+//            if (btn.getButtonData().equals(ButtonBar.ButtonData.CANCEL_CLOSE)) return;
+//            String key = keyCBX.getSelectionModel().getSelectedItem();
+//            String layer = layerCBX.getSelectionModel().getSelectedItem();
+//            k.setValue("LT(" + layer + "," + key + ")");
         });
+
+    }
+
+    private void showCustomMacro(GridPane content) {
+        content.getChildren().clear();
+        TextArea txt = new TextArea();
+        content.add(new Label("Custom macro content"), 0, 0);
+        content.add(txt, 0, 1);
+    }
+
+    private void showHoldKeyMacro(GridPane content) {
+
+    }
+
+    private void showLongPressMacro(GridPane content) {
+
+    }
+
+    private void showTypeMacro(GridPane content) {
+        content.getChildren().clear();
+        content.add(new Label("Type macro:"), 0, 0);
+        content.add(new TextField("U(SFT),D(A)"), 0, 1);
+
     }
 }
