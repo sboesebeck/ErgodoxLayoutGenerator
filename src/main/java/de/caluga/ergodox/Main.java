@@ -58,10 +58,8 @@ package de.caluga.ergodox; /**
  * Created by stephan on 29.03.16.
  */
 
-import de.caluga.ergodox.macros.LongPressAndTypeMacro;
+import de.caluga.ergodox.macrodialog.MacroDialog;
 import de.caluga.ergodox.macros.Macro;
-import de.caluga.ergodox.macros.MacroAction;
-import de.caluga.ergodox.macros.TypeMacro;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.embed.swing.SwingFXUtils;
@@ -69,7 +67,6 @@ import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
-import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.SnapshotParameters;
 import javafx.scene.control.*;
@@ -94,30 +91,25 @@ import java.io.FileInputStream;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.*;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 
 /**
  * TODO: Add Documentation here
  **/
 public class Main extends Application {
+    private static final File configFile = new File(System.getProperty("user.home") + "/.ergodoxgenerator.conf");
+    public static Properties applicationSettings;
     public final int pixelWidth = 40;
     public final int pixelHeight = 25;
     public final int pixelOffsetX = 5;
     public final int pixelOffsetY = 5;
-
     public final int offsetX = 25;
     public final int offsetY = 75;
-    private final File configFile = new File(System.getProperty("user.home") + "/.ergodoxgenerator.conf");
     private final String qmksourcedir = "qmksourcedir";
-
     public int rightHalfOffset = 400;
     private double scaleX = 1.0;
     private double scaleY = 1.0;
-
     private Label selectedGuiKey = null;
-
     private Button setSourceDir;
     private Label sourceDirLabel;
     private Button createKeymap;
@@ -127,14 +119,12 @@ public class Main extends Application {
     private int initialWindowWidth;
     private int initialWindowHeight;
     private double currentWindowHeight;
-    private double currentWindowWidth;
 //    private ComboBox<String> macroCombo;
-
+private double currentWindowWidth;
     private ComboBox<String> layerCombo;
     private Button createLayer;
     private Button renameLayer;
     private Button deleteLayer;
-
     private ErgodoxLayoutLayer currentLayer;
     private Pane canvas;
     private File qmkSourceDir;
@@ -145,7 +135,6 @@ public class Main extends Application {
     private Label legendModifierKey;
     private Label legendCombination;
     private Label legendHoldKey;
-
     private Label keyDescription;
     private Button saveImgBtn;
     private String currentKeymap;
@@ -154,12 +143,46 @@ public class Main extends Application {
     private Label led2;
     private Label led3;
     private ErgodoxLayout ergodoxLayout;
-    private Properties applicationSettings;
     private String lastOpenedFile = "last_opened_file";
 
 
     public static void main(String[] args) {
         launch(args);
+    }
+
+    public static Map<String, String> getPrefixDescriptionMap() {
+        Map<String, String> prefixDescriptionByPrefix = new HashMap();
+        prefixDescriptionByPrefix.put("ALL", "show all keys");
+        prefixDescriptionByPrefix.put("KC", "Default keys / US layout");
+        prefixDescriptionByPrefix.put("BL", "BL-Layout");
+        prefixDescriptionByPrefix.put("BP", "BP-Layout");
+        prefixDescriptionByPrefix.put("DE", "German keyboard layout");
+        prefixDescriptionByPrefix.put("DE_OSX", "German keyboard layout for Mac OSX");
+        prefixDescriptionByPrefix.put("DV", "DVORAK");
+        prefixDescriptionByPrefix.put("ES", "Spanish layout");
+        prefixDescriptionByPrefix.put("FR", "French layout");
+        prefixDescriptionByPrefix.put("NEO", "German NEO2 layout");
+        prefixDescriptionByPrefix.put("NO", "Norwegian layout");
+        prefixDescriptionByPrefix.put("UK", "United Kingdom");
+        return prefixDescriptionByPrefix;
+    }
+
+    public static List<String> getKeyCodesList() {
+        List<String> choices = new ArrayList<>();
+        for (ErgodoxKeyCode c : ErgodoxKeyCode.values()) {
+            choices.add(c.name());
+        }
+
+        return choices;
+    }
+
+    public static void saveConfig() {
+        try {
+            applicationSettings.store(new FileWriter(configFile), "Ergodox Layout Generator");
+        } catch (Exception e) {
+            //TODO: Implement Handling
+            throw new RuntimeException(e);
+        }
     }
 
     public void start(Stage primaryStage) throws Exception {
@@ -267,7 +290,8 @@ public class Main extends Application {
 
             MenuItem assignMacro = new MenuItem("Assign Macro");
             assignMacro.addEventHandler(ActionEvent.ACTION, event -> {
-
+                doAssignMacro(currentLayer.getLayout().get(i));
+                layout(canvas);
             });
             MenuItem assignLayerToggle = new MenuItem("Assign Layertoggle");
             assignLayerToggle.addEventHandler(ActionEvent.ACTION, event -> {
@@ -484,491 +508,27 @@ public class Main extends Application {
 
     }
 
+    private void doAssignMacro(Key k) {
+        MacroDialog dlg = new MacroDialog(ergodoxLayout);
+        dlg.show(k);
+    }
+
     private void doAssingLayerToggle(Key k) {
-        // Create the custom dialog.
-        Dialog<ButtonType> dialog = new Dialog<>();
-        dialog.setTitle("Choose Layer");
-        dialog.setHeaderText("available layers");
-
-        ButtonType assignButtonType = new ButtonType("Assign toggle", ButtonBar.ButtonData.OK_DONE);
-        dialog.getDialogPane().getButtonTypes().addAll(assignButtonType, ButtonType.CANCEL);
-
-        GridPane grid = new GridPane();
-        grid.setHgap(10);
-        grid.setVgap(10);
-        grid.setPadding(new Insets(20, 150, 10, 10));
-
-        ComboBox<String> bx = new ComboBox<>();
-        for (String layerName : ergodoxLayout.getLayers().keySet()) {
-            bx.getItems().add(layerName);
-        }
-        bx.addEventHandler(KeyEvent.KEY_PRESSED, event -> {
-            if (event.getCode().equals("ENTER")) {
-                k.setValue("TG(" + bx.getSelectionModel().getSelectedItem() + ")");
-                dialog.close();
-            }
-        });
-
-        grid.add(new Label("Layer:"), 0, 0);
-        grid.add(bx, 1, 0);
-
-// Enable/Disable login button depending on whether a username was entered.
-        Node assignButton = dialog.getDialogPane().lookupButton(assignButtonType);
-        assignButton.setDisable(true);
-
-        bx.addEventHandler(ActionEvent.ACTION, event -> {
-            assignButton.setDisable(false);
-        });
-
-        dialog.getDialogPane().setContent(grid);
-
-// Request focus on the username field by default.
-        Platform.runLater(() -> bx.requestFocus());
-
-
-        Optional<ButtonType> result = dialog.showAndWait();
-
-        result.ifPresent(btn -> {
-            if (btn.getButtonData().equals(ButtonBar.ButtonData.CANCEL_CLOSE)) return;
-            //Got selection ok
-            String selectedItem = bx.getSelectionModel().getSelectedItem();
-            k.setValue("TG(" + selectedItem + ")");
-        });
+        AssignLayerToggleDialog dlg = new AssignLayerToggleDialog(ergodoxLayout);
+        dlg.show(k);
 
     }
 
     private void doAssignLT(Key k) {
-        List<String> choices = getKeyCodesList();
-        String def = k.getValue();
-        if (def == null || def.contains("(")) {
-            def = "KC_TRNS";
-        }
-        //describing choices
-        Map<String, String> prefixDescriptionByPrefix = getPrefixDescriptionMap();
-
-        // Create the custom dialog.
-        Dialog<ButtonType> dialog = new Dialog<>();
-        dialog.setTitle("Choose Key");
-        dialog.setHeaderText("Key from available keys");
-
-        ButtonType assignButtonType = new ButtonType("Assign", ButtonBar.ButtonData.OK_DONE);
-        dialog.getDialogPane().getButtonTypes().addAll(assignButtonType, ButtonType.CANCEL);
-
-        GridPane grid = new GridPane();
-        grid.setHgap(10);
-        grid.setVgap(10);
-        grid.setPadding(new Insets(20, 150, 10, 10));
-
-        ComboBox<String> bx = new ComboBox<>();
-        for (String prfx : prefixDescriptionByPrefix.keySet()) {
-            bx.getItems().add(prfx + " - " + prefixDescriptionByPrefix.get(prfx));
-        }
-
-        ComboBox<String> keyCBX = new ComboBox<>();
-        keyCBX.setEditable(true);
-        keyCBX.getItems().addAll(choices);
-        ComboBoxAutocompleter autocompleterForKeys = new ComboBoxAutocompleter(keyCBX);
-        keyCBX.getSelectionModel().select(def);
-        String lastKey = applicationSettings.getProperty("last_key_prefix");
-        if (lastKey != null) {
-            bx.getSelectionModel().select(lastKey);
-            if (def.equals("KC_TRNS")) {
-                keyCBX.getEditor().setText(((String) lastKey).substring(0, lastKey.indexOf(" - ")));
-                Platform.runLater(() -> {
-                    autocompleterForKeys.updateSelection();
-                });
-            }
-        } else {
-            bx.getSelectionModel().select("ALL - " + prefixDescriptionByPrefix.get("ALL"));
-        }
-        ComboBox<String> layerCBX = new ComboBox<>();
-        layerCBX.setEditable(true);
-        if (ergodoxLayout.getLayers() == null) {
-            return;
-        } else {
-            layerCBX.getItems().addAll(ergodoxLayout.getLayers().keySet());
-        }
-//        layerCBX.setEditable(true);
-//        ComboBoxAutocompleter autocompleterForLayers = new ComboBoxAutocompleter(layerCBX);
-
-
-        bx.addEventHandler(ActionEvent.ACTION, event -> {
-            String selectedItem = bx.getSelectionModel().getSelectedItem();
-            if (selectedItem.startsWith("ALL - ")) {
-                keyCBX.getEditor().setText("");
-            } else {
-                keyCBX.getEditor().setText(selectedItem.substring(0, selectedItem.indexOf(" - ")));
-            }
-            autocompleterForKeys.updateSelection();
-            Node assignButton = dialog.getDialogPane().lookupButton(assignButtonType);
-            assignButton.setDisable(true);
-            applicationSettings.setProperty("last_key_prefix", selectedItem);
-            saveConfig();
-        });
-
-        keyCBX.addEventHandler(ActionEvent.ACTION, event -> {
-            Node assignButton = dialog.getDialogPane().lookupButton(assignButtonType);
-            assignButton.setDisable(false);
-        });
-
-//        layerCBX.addEventHandler(KeyEvent.KEY_PRESSED, event -> {
-//            if (event.getCode().equals("ENTER")) {
-//                k.setValue(keyCBX.getSelectionModel().getSelectedItem());
-//                dialog.close();
-//            }
-//        });
-//
-
-        grid.add(new Label("Prefix:"), 0, 0);
-        grid.add(bx, 1, 0);
-        grid.add(new Label("Key typed:"), 0, 2);
-        grid.add(keyCBX, 1, 2);
-        grid.add(new Label("Layer when held:"), 0, 1);
-        grid.add(layerCBX, 1, 1);
-
-// Enable/Disable login button depending on whether a username was entered.
-        Node assignButton = dialog.getDialogPane().lookupButton(assignButtonType);
-        assignButton.setDisable(true);
-
-
-        dialog.getDialogPane().setContent(grid);
-
-// Request focus on the username field by default.
-        Platform.runLater(() -> keyCBX.requestFocus());
-
-
-        Optional<ButtonType> result = dialog.showAndWait();
-
-        result.ifPresent(btn -> {
-            //Got selection ok
-            if (btn.getButtonData().equals(ButtonBar.ButtonData.CANCEL_CLOSE)) return;
-            String selectedItem = keyCBX.getSelectionModel().getSelectedItem();
-            String selectedItem2 = layerCBX.getSelectionModel().getSelectedItem();
-            k.setValue("LT(" + selectedItem + "," + selectedItem2 + ")");
-        });
+        AssignLTDialog dlg = new AssignLTDialog(ergodoxLayout);
+        dlg.show(k);
 
     }
 
     private void doAssignKey(Key k) {
-        List<String> choices = getKeyCodesList();
+        AssignKeyDialog ak = new AssignKeyDialog(ergodoxLayout);
+        ak.show(k);
 
-        String def = k.getValue();
-        //describing choices
-        Map<String, String> prefixDescriptionByPrefix = getPrefixDescriptionMap();
-
-        // Create the custom dialog.
-        Dialog<ButtonType> dialog = new Dialog<>();
-        dialog.setTitle("Choose Key");
-        dialog.setHeaderText("Key from available keys");
-
-        ButtonType assignButtonType = new ButtonType("Assign", ButtonBar.ButtonData.OK_DONE);
-        dialog.getDialogPane().getButtonTypes().addAll(assignButtonType, ButtonType.CANCEL);
-
-        GridPane grid = new GridPane();
-        grid.setHgap(10);
-        grid.setVgap(10);
-        grid.setPadding(new Insets(20, 150, 10, 10));
-
-        ComboBox<String> prefixCBX = new ComboBox<>();
-        for (String prfx : prefixDescriptionByPrefix.keySet()) {
-            prefixCBX.getItems().add(prfx + " - " + prefixDescriptionByPrefix.get(prfx));
-        }
-
-        ComboBox<String> keyCodexCBX = new ComboBox<>();
-        keyCodexCBX.setEditable(true);
-        keyCodexCBX.getItems().addAll(choices);
-        ComboBoxAutocompleter ac = new ComboBoxAutocompleter(keyCodexCBX);
-
-        String lastKey = applicationSettings.getProperty("last_key_prefix");
-
-        if (lastKey != null) {
-            prefixCBX.getSelectionModel().select(lastKey);
-            keyCodexCBX.getEditor().setText(((String) lastKey).substring(0, lastKey.indexOf(" - ")));
-            Platform.runLater(() -> {
-                ac.updateSelection();
-            });
-        } else {
-            prefixCBX.getSelectionModel().select("ALL - " + prefixDescriptionByPrefix.get("ALL"));
-        }
-
-
-
-        prefixCBX.addEventHandler(ActionEvent.ACTION, event -> {
-            String selectedItem = prefixCBX.getSelectionModel().getSelectedItem();
-            if (selectedItem.startsWith("ALL - ")) {
-                keyCodexCBX.getEditor().setText("");
-            } else {
-                keyCodexCBX.getEditor().setText(selectedItem.substring(0, selectedItem.indexOf(" - ")));
-            }
-            ac.updateSelection();
-            Node assignButton = dialog.getDialogPane().lookupButton(assignButtonType);
-            assignButton.setDisable(true);
-            applicationSettings.setProperty("last_key_prefix", selectedItem);
-            saveConfig();
-        });
-
-        keyCodexCBX.addEventHandler(ActionEvent.ACTION, event -> {
-            Node assignButton = dialog.getDialogPane().lookupButton(assignButtonType);
-            assignButton.setDisable(false);
-
-        });
-        keyCodexCBX.addEventHandler(KeyEvent.KEY_PRESSED, event -> {
-            if (event.getCode().equals("ENTER")) {
-                k.setValue(keyCodexCBX.getSelectionModel().getSelectedItem());
-                dialog.close();
-            }
-        });
-
-//        ToggleGroup toggleGroup = new ToggleGroup();
-
-        CheckBox shiftCbx = new CheckBox("Shift");
-        CheckBox ctrlCbx = new CheckBox("Ctrl");
-        CheckBox altCbx = new CheckBox("Alt");
-        CheckBox cmdCbx = new CheckBox("Cmd");
-//        cmdCbx.setToggleGroup(toggleGroup);
-//        shiftCbx.setToggleGroup(toggleGroup);
-//        altCbx.setToggleGroup(toggleGroup);
-//        ctrlCbx.setToggleGroup(toggleGroup);
-
-        CheckBox[] checkBoxes = new CheckBox[]{shiftCbx, ctrlCbx, altCbx, cmdCbx};
-        CheckBox combinationLT = new CheckBox("if checked, modifier will issued when held, key when typed");
-        Label desc = new Label("when more than one modifier is selected, a macro will be created!");
-        Label currentValue=new Label("current value: ");
-        Pane p = new FlowPane();
-        for (CheckBox cbx : checkBoxes) {
-            p.getChildren().add(cbx);
-        }
-        Map<CheckBox, ErgodoxKeyCode> modifierByCBox = new HashMap();
-        modifierByCBox.put(shiftCbx, ErgodoxKeyCode.KC_LSFT);
-        modifierByCBox.put(ctrlCbx, ErgodoxKeyCode.KC_LCTL);
-        modifierByCBox.put(altCbx, ErgodoxKeyCode.KC_LALT);
-        modifierByCBox.put(cmdCbx, ErgodoxKeyCode.KC_LGUI);
-
-        if (def != null) {
-            if (def.startsWith("M(")) {
-                //Macro
-                Macro macro=ergodoxLayout.getMacros().get(def.substring(2,def.length()-1));
-                if (macro!=null && macro instanceof TypeMacro){
-                    TypeMacro tm=(TypeMacro)macro;
-                    for (MacroAction a: tm.getActions()){
-                        if (a.getAction().equals(MacroAction.Action.DOWN)){
-                            for (CheckBox bx:modifierByCBox.keySet()){
-                                if (modifierByCBox.get(bx).equals(a.getCode())){
-                                    bx.setSelected(true);
-                                }
-                            }
-                        } else if (a.getAction().equals(MacroAction.Action.TYPE)){
-                            keyCodexCBX.getSelectionModel().select(a.getCode().name());
-                        }
-
-                    }
-                    combinationLT.setSelected(false);
-                } else if (macro!=null && macro instanceof LongPressAndTypeMacro){
-                    LongPressAndTypeMacro lp=(LongPressAndTypeMacro)macro;
-                    for (MacroAction a:lp.getLongPressKeys()){
-                        if (a.getAction().equals(MacroAction.Action.DOWN)) {
-                            for (CheckBox bx : modifierByCBox.keySet()) {
-                                if (modifierByCBox.get(bx).equals(a.getCode())) {
-                                    bx.setSelected(true);
-                                }
-                            }
-                        }
-                    }
-                    for (MacroAction a:lp.getShortStrokes()){
-                        if (a.getAction().equals(MacroAction.Action.TYPE)){
-                            keyCodexCBX.getSelectionModel().select(a.getCode().name());
-                        }
-                    }
-                    combinationLT.setSelected(true);
-                }
-            } else if (def.contains("(")) {
-                Pattern defp = Pattern.compile("([0-9A-Z_]+)\\(([0-9A-Z_]+)\\)");
-                Matcher m = defp.matcher(def);
-                if (m.matches()){
-                    if (m.group(1).endsWith("_T")){
-                        if (m.group(1).startsWith("ALT")){
-                            altCbx.setSelected(true);
-                        } else if(m.group(1).startsWith("GUI")){
-                            cmdCbx.setSelected(true);
-                        } else if (m.group(1).startsWith("SHFT")){
-                            cmdCbx.setSelected(true);
-                        } else if (m.group(1).startsWith("CTL")){
-                            cmdCbx.setSelected(true);
-                        }
-                    } else {
-                        if (m.group(1).startsWith("LALT")){
-                            altCbx.setSelected(true);
-                        } else if(m.group(1).startsWith("LGUI")){
-                            cmdCbx.setSelected(true);
-                        } else if (m.group(1).startsWith("LSFT")){
-                            cmdCbx.setSelected(true);
-                        } else if (m.group(1).startsWith("LCTL")){
-                            cmdCbx.setSelected(true);
-                        }
-                    }
-
-                    keyCodexCBX.getSelectionModel().select(m.group(2));
-                }
-            } else {
-                keyCodexCBX.getSelectionModel().select(def);
-            }
-        }
-        if (def!=null) currentValue.setText("Current value: "+def); else currentValue.setText("Currently no value");
-        grid.add(new Label("Prefix:"), 0, 0);
-        grid.add(prefixCBX, 1, 0);
-        grid.add(new Label("Key:"), 0, 1);
-        grid.add(keyCodexCBX, 1, 1);
-        grid.add(p, 0, 2, 2, 1);
-        grid.add(combinationLT, 0, 3, 2, 1);
-        grid.add(desc, 0, 4, 2, 1);
-        grid.add(currentValue,1,5);
-
-// Enable/Disable login button depending on whether a username was entered.
-        Node assignButton = dialog.getDialogPane().lookupButton(assignButtonType);
-        assignButton.setDisable(true);
-
-
-        dialog.getDialogPane().setContent(grid);
-
-
-// Request focus on the username field by default.
-        Platform.runLater(() -> keyCodexCBX.requestFocus());
-
-
-        Optional<ButtonType> result = dialog.showAndWait();
-
-        result.ifPresent(btn -> {
-            if (btn.getButtonData().equals(ButtonBar.ButtonData.CANCEL_CLOSE)) return;
-            int cnt = 0;
-            for (CheckBox b : checkBoxes) {
-                if (b.isSelected()) cnt++;
-            }
-
-            String selectedItem = keyCodexCBX.getSelectionModel().getSelectedItem();
-            if (combinationLT.isSelected()) {
-                if (cnt == 4) {
-                    //Hyper
-                    selectedItem = "ALL_T(" + selectedItem + ")";
-                } else if (cnt == 3 && shiftCbx.isSelected() && altCbx.isSelected() && ctrlCbx.isSelected()) {
-                    //Meh
-                    selectedItem = "MEH_T(" + selectedItem + ")";
-                } else if (cnt <= 3 && cnt > 1) {
-                    //Macro implementation
-                    LongPressAndTypeMacro lp = new LongPressAndTypeMacro();
-                    //Setting modifiers for longpress
-                    for (CheckBox cbx : checkBoxes) {
-                        if (cbx.isSelected()) {
-                            //Pressing modifiers
-                            MacroAction a = new MacroAction();
-                            a.setCode(modifierByCBox.get(cbx));
-                            a.setAction(MacroAction.Action.DOWN);
-                            a.setWait(0);
-                            lp.getLongPressKeys().add(a);
-
-                            //releasing them
-                            a = new MacroAction();
-                            a.setCode(modifierByCBox.get(cbx));
-                            a.setAction(MacroAction.Action.UP);
-                            lp.getShortStrokes().add(a);
-                        }
-
-                    }
-                    //typing _the_ key
-                    MacroAction keyType = new MacroAction();
-                    keyType.setCode(ErgodoxKeyCode.valueOf(selectedItem));
-                    keyType.setAction(MacroAction.Action.TYPE);
-                    lp.getShortStrokes().add(keyType);
-
-                    lp.setName("M_Key_" + selectedItem + "_MODS");
-                    lp.setTimeout(150);
-                    ergodoxLayout.getMacros().put(lp.getName(), lp);
-
-                    selectedItem = "M(" + lp.getName() + ")";
-
-                } else if (cnt == 1) {
-                    if (shiftCbx.isSelected()) {
-                        selectedItem = "SHFT_T(" + selectedItem + ")";
-                    } else if (ctrlCbx.isSelected()) {
-                        selectedItem = "CTL_T(" + selectedItem + ")";
-                    } else if (cmdCbx.isSelected()) {
-                        selectedItem = "GUI_T(" + selectedItem + ")";
-                    } else if (altCbx.isSelected()) {
-                        selectedItem = "ALT_T(" + selectedItem + ")";
-                    }
-                }
-            } else {
-                if (cnt == 1) {
-                    //Got selection ok
-                    if (shiftCbx.isSelected()) {
-                        selectedItem = "LSFT(" + selectedItem + ")";
-                    } else if (ctrlCbx.isSelected()) {
-                        selectedItem = "LCTL(" + selectedItem + ")";
-                    } else if (cmdCbx.isSelected()) {
-                        selectedItem = "LGUI(" + selectedItem + ")";
-                    } else if (altCbx.isSelected()) {
-                        selectedItem = "LALT(" + selectedItem + ")";
-                    }
-                } else if (cnt > 1) {
-                    //macro necessary
-                    TypeMacro tm = new TypeMacro();
-                    for (CheckBox cbx : checkBoxes) {
-                        if (cbx.isSelected()) {
-                            MacroAction a = new MacroAction();
-                            a.setAction(MacroAction.Action.DOWN);
-                            a.setCode(modifierByCBox.get(cbx));
-                            tm.getActions().add(a);
-                        }
-                    }
-                    //Typing the key
-                    MacroAction type = new MacroAction();
-                    type.setCode(ErgodoxKeyCode.valueOf(selectedItem));
-                    type.setAction(MacroAction.Action.TYPE);
-                    tm.getActions().add(type);
-                    //releasing modifiers
-                    for (CheckBox cbx : checkBoxes) {
-                        if (cbx.isSelected()) {
-                            MacroAction a = new MacroAction();
-                            a.setAction(MacroAction.Action.UP);
-                            a.setCode(modifierByCBox.get(cbx));
-                            tm.getActions().add(a);
-                        }
-                    }
-
-                    tm.setName("M_MOD_" + selectedItem);
-                    ergodoxLayout.getMacros().put(tm.getName(), tm);
-                    selectedItem = "M(" + tm.getName() + ")";
-                }
-            }
-            k.setValue(selectedItem);
-        });
-
-
-    }
-
-    private Map<String, String> getPrefixDescriptionMap() {
-        Map<String, String> prefixDescriptionByPrefix = new HashMap();
-        prefixDescriptionByPrefix.put("ALL", "show all keys");
-        prefixDescriptionByPrefix.put("KC", "Default keys / US layout");
-        prefixDescriptionByPrefix.put("BL", "BL-Layout");
-        prefixDescriptionByPrefix.put("BP", "BP-Layout");
-        prefixDescriptionByPrefix.put("DE", "German keyboard layout");
-        prefixDescriptionByPrefix.put("DE_OSX", "German keyboard layout for Mac OSX");
-        prefixDescriptionByPrefix.put("DV", "DVORAK");
-        prefixDescriptionByPrefix.put("ES", "Spanish layout");
-        prefixDescriptionByPrefix.put("FR", "French layout");
-        prefixDescriptionByPrefix.put("NEO", "German NEO2 layout");
-        prefixDescriptionByPrefix.put("NO", "Norwegian layout");
-        prefixDescriptionByPrefix.put("UK", "United Kingdom");
-        return prefixDescriptionByPrefix;
-    }
-
-    private List<String> getKeyCodesList() {
-        List<String> choices = new ArrayList<>();
-        for (ErgodoxKeyCode c : ErgodoxKeyCode.values()) {
-            choices.add(c.name());
-        }
-
-        return choices;
     }
 
     private void markLabel(Label label) {
@@ -1025,15 +585,6 @@ public class Main extends Application {
         }
         if (applicationSettings == null) {
             applicationSettings = new Properties();
-        }
-    }
-
-    private void saveConfig() {
-        try {
-            applicationSettings.store(new FileWriter(configFile), "Ergodox Layout Generator");
-        } catch (Exception e) {
-            //TODO: Implement Handling
-            throw new RuntimeException(e);
         }
     }
 
