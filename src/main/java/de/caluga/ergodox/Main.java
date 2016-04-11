@@ -94,6 +94,8 @@ import java.io.FileInputStream;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 
 /**
@@ -526,7 +528,8 @@ public class Main extends Application {
 
         Optional<ButtonType> result = dialog.showAndWait();
 
-        result.ifPresent(selectedKeyCode -> {
+        result.ifPresent(btn -> {
+            if (btn.getButtonData().equals(ButtonBar.ButtonData.CANCEL_CLOSE)) return;
             //Got selection ok
             String selectedItem = bx.getSelectionModel().getSelectedItem();
             k.setValue("TG(" + selectedItem + ")");
@@ -585,8 +588,8 @@ public class Main extends Application {
         } else {
             layerCBX.getItems().addAll(ergodoxLayout.getLayers().keySet());
         }
-        ComboBoxAutocompleter autocompleterForLayers = new ComboBoxAutocompleter(layerCBX);
-        layerCBX.getSelectionModel().select(def);
+//        layerCBX.setEditable(true);
+//        ComboBoxAutocompleter autocompleterForLayers = new ComboBoxAutocompleter(layerCBX);
 
 
         bx.addEventHandler(ActionEvent.ACTION, event -> {
@@ -596,7 +599,7 @@ public class Main extends Application {
             } else {
                 keyCBX.getEditor().setText(selectedItem.substring(0, selectedItem.indexOf(" - ")));
             }
-            autocompleterForLayers.updateSelection();
+            autocompleterForKeys.updateSelection();
             Node assignButton = dialog.getDialogPane().lookupButton(assignButtonType);
             assignButton.setDisable(true);
             applicationSettings.setProperty("last_key_prefix", selectedItem);
@@ -608,13 +611,13 @@ public class Main extends Application {
             assignButton.setDisable(false);
         });
 
-        layerCBX.addEventHandler(KeyEvent.KEY_PRESSED, event -> {
-            if (event.getCode().equals("ENTER")) {
-                k.setValue(keyCBX.getSelectionModel().getSelectedItem());
-                dialog.close();
-            }
-        });
-
+//        layerCBX.addEventHandler(KeyEvent.KEY_PRESSED, event -> {
+//            if (event.getCode().equals("ENTER")) {
+//                k.setValue(keyCBX.getSelectionModel().getSelectedItem());
+//                dialog.close();
+//            }
+//        });
+//
 
         grid.add(new Label("Prefix:"), 0, 0);
         grid.add(bx, 1, 0);
@@ -636,8 +639,9 @@ public class Main extends Application {
 
         Optional<ButtonType> result = dialog.showAndWait();
 
-        result.ifPresent(selectedKeyCode -> {
+        result.ifPresent(btn -> {
             //Got selection ok
+            if (btn.getButtonData().equals(ButtonBar.ButtonData.CANCEL_CLOSE)) return;
             String selectedItem = keyCBX.getSelectionModel().getSelectedItem();
             String selectedItem2 = layerCBX.getSelectionModel().getSelectedItem();
             k.setValue("LT(" + selectedItem + "," + selectedItem2 + ")");
@@ -649,9 +653,6 @@ public class Main extends Application {
         List<String> choices = getKeyCodesList();
 
         String def = k.getValue();
-        if (def == null || def.contains("(")) {
-            def = "KC_TRNS";
-        }
         //describing choices
         Map<String, String> prefixDescriptionByPrefix = getPrefixDescriptionMap();
 
@@ -668,33 +669,36 @@ public class Main extends Application {
         grid.setVgap(10);
         grid.setPadding(new Insets(20, 150, 10, 10));
 
-        ComboBox<String> bx = new ComboBox<>();
+        ComboBox<String> prefixCBX = new ComboBox<>();
         for (String prfx : prefixDescriptionByPrefix.keySet()) {
-            bx.getItems().add(prfx + " - " + prefixDescriptionByPrefix.get(prfx));
+            prefixCBX.getItems().add(prfx + " - " + prefixDescriptionByPrefix.get(prfx));
         }
 
-        ComboBox<String> bx2 = new ComboBox<>();
-        bx2.setEditable(true);
-        bx2.getItems().addAll(choices);
-        ComboBoxAutocompleter ac = new ComboBoxAutocompleter(bx2);
-        bx2.getSelectionModel().select(def);
+        ComboBox<String> keyCodexCBX = new ComboBox<>();
+        keyCodexCBX.setEditable(true);
+        keyCodexCBX.getItems().addAll(choices);
+        ComboBoxAutocompleter ac = new ComboBoxAutocompleter(keyCodexCBX);
+
         String lastKey = applicationSettings.getProperty("last_key_prefix");
+
         if (lastKey != null) {
-            bx.getSelectionModel().select(lastKey);
-            bx2.getEditor().setText(((String) lastKey).substring(0, lastKey.indexOf(" - ")));
+            prefixCBX.getSelectionModel().select(lastKey);
+            keyCodexCBX.getEditor().setText(((String) lastKey).substring(0, lastKey.indexOf(" - ")));
             Platform.runLater(() -> {
                 ac.updateSelection();
             });
         } else {
-            bx.getSelectionModel().select("ALL - " + prefixDescriptionByPrefix.get("ALL"));
+            prefixCBX.getSelectionModel().select("ALL - " + prefixDescriptionByPrefix.get("ALL"));
         }
 
-        bx.addEventHandler(ActionEvent.ACTION, event -> {
-            String selectedItem = bx.getSelectionModel().getSelectedItem();
+
+
+        prefixCBX.addEventHandler(ActionEvent.ACTION, event -> {
+            String selectedItem = prefixCBX.getSelectionModel().getSelectedItem();
             if (selectedItem.startsWith("ALL - ")) {
-                bx2.getEditor().setText("");
+                keyCodexCBX.getEditor().setText("");
             } else {
-                bx2.getEditor().setText(selectedItem.substring(0, selectedItem.indexOf(" - ")));
+                keyCodexCBX.getEditor().setText(selectedItem.substring(0, selectedItem.indexOf(" - ")));
             }
             ac.updateSelection();
             Node assignButton = dialog.getDialogPane().lookupButton(assignButtonType);
@@ -703,14 +707,14 @@ public class Main extends Application {
             saveConfig();
         });
 
-        bx2.addEventHandler(ActionEvent.ACTION, event -> {
+        keyCodexCBX.addEventHandler(ActionEvent.ACTION, event -> {
             Node assignButton = dialog.getDialogPane().lookupButton(assignButtonType);
             assignButton.setDisable(false);
 
         });
-        bx2.addEventHandler(KeyEvent.KEY_PRESSED, event -> {
+        keyCodexCBX.addEventHandler(KeyEvent.KEY_PRESSED, event -> {
             if (event.getCode().equals("ENTER")) {
-                k.setValue(bx2.getSelectionModel().getSelectedItem());
+                k.setValue(keyCodexCBX.getSelectionModel().getSelectedItem());
                 dialog.close();
             }
         });
@@ -729,6 +733,7 @@ public class Main extends Application {
         CheckBox[] checkBoxes = new CheckBox[]{shiftCbx, ctrlCbx, altCbx, cmdCbx};
         CheckBox combinationLT = new CheckBox("if checked, modifier will issued when held, key when typed");
         Label desc = new Label("when more than one modifier is selected, a macro will be created!");
+        Label currentValue=new Label("current value: ");
         Pane p = new FlowPane();
         for (CheckBox cbx : checkBoxes) {
             p.getChildren().add(cbx);
@@ -739,13 +744,84 @@ public class Main extends Application {
         modifierByCBox.put(altCbx, ErgodoxKeyCode.KC_LALT);
         modifierByCBox.put(cmdCbx, ErgodoxKeyCode.KC_LGUI);
 
+        if (def != null) {
+            if (def.startsWith("M(")) {
+                //Macro
+                Macro macro=ergodoxLayout.getMacros().get(def.substring(2,def.length()-1));
+                if (macro!=null && macro instanceof TypeMacro){
+                    TypeMacro tm=(TypeMacro)macro;
+                    for (MacroAction a: tm.getActions()){
+                        if (a.getAction().equals(MacroAction.Action.DOWN)){
+                            for (CheckBox bx:modifierByCBox.keySet()){
+                                if (modifierByCBox.get(bx).equals(a.getCode())){
+                                    bx.setSelected(true);
+                                }
+                            }
+                        } else if (a.getAction().equals(MacroAction.Action.TYPE)){
+                            keyCodexCBX.getSelectionModel().select(a.getCode().name());
+                        }
+
+                    }
+                    combinationLT.setSelected(false);
+                } else if (macro!=null && macro instanceof LongPressAndTypeMacro){
+                    LongPressAndTypeMacro lp=(LongPressAndTypeMacro)macro;
+                    for (MacroAction a:lp.getLongPressKeys()){
+                        if (a.getAction().equals(MacroAction.Action.DOWN)) {
+                            for (CheckBox bx : modifierByCBox.keySet()) {
+                                if (modifierByCBox.get(bx).equals(a.getCode())) {
+                                    bx.setSelected(true);
+                                }
+                            }
+                        }
+                    }
+                    for (MacroAction a:lp.getShortStrokes()){
+                        if (a.getAction().equals(MacroAction.Action.TYPE)){
+                            keyCodexCBX.getSelectionModel().select(a.getCode().name());
+                        }
+                    }
+                    combinationLT.setSelected(true);
+                }
+            } else if (def.contains("(")) {
+                Pattern defp = Pattern.compile("([0-9A-Z_]+)\\(([0-9A-Z_]+)\\)");
+                Matcher m = defp.matcher(def);
+                if (m.matches()){
+                    if (m.group(1).endsWith("_T")){
+                        if (m.group(1).startsWith("ALT")){
+                            altCbx.setSelected(true);
+                        } else if(m.group(1).startsWith("GUI")){
+                            cmdCbx.setSelected(true);
+                        } else if (m.group(1).startsWith("SHFT")){
+                            cmdCbx.setSelected(true);
+                        } else if (m.group(1).startsWith("CTL")){
+                            cmdCbx.setSelected(true);
+                        }
+                    } else {
+                        if (m.group(1).startsWith("LALT")){
+                            altCbx.setSelected(true);
+                        } else if(m.group(1).startsWith("LGUI")){
+                            cmdCbx.setSelected(true);
+                        } else if (m.group(1).startsWith("LSFT")){
+                            cmdCbx.setSelected(true);
+                        } else if (m.group(1).startsWith("LCTL")){
+                            cmdCbx.setSelected(true);
+                        }
+                    }
+
+                    keyCodexCBX.getSelectionModel().select(m.group(2));
+                }
+            } else {
+                keyCodexCBX.getSelectionModel().select(def);
+            }
+        }
+        if (def!=null) currentValue.setText("Current value: "+def); else currentValue.setText("Currently no value");
         grid.add(new Label("Prefix:"), 0, 0);
-        grid.add(bx, 1, 0);
+        grid.add(prefixCBX, 1, 0);
         grid.add(new Label("Key:"), 0, 1);
-        grid.add(bx2, 1, 1);
+        grid.add(keyCodexCBX, 1, 1);
         grid.add(p, 0, 2, 2, 1);
         grid.add(combinationLT, 0, 3, 2, 1);
         grid.add(desc, 0, 4, 2, 1);
+        grid.add(currentValue,1,5);
 
 // Enable/Disable login button depending on whether a username was entered.
         Node assignButton = dialog.getDialogPane().lookupButton(assignButtonType);
@@ -754,19 +830,21 @@ public class Main extends Application {
 
         dialog.getDialogPane().setContent(grid);
 
+
 // Request focus on the username field by default.
-        Platform.runLater(() -> bx2.requestFocus());
+        Platform.runLater(() -> keyCodexCBX.requestFocus());
 
 
         Optional<ButtonType> result = dialog.showAndWait();
 
-        result.ifPresent(selectedKeyCode -> {
+        result.ifPresent(btn -> {
+            if (btn.getButtonData().equals(ButtonBar.ButtonData.CANCEL_CLOSE)) return;
             int cnt = 0;
             for (CheckBox b : checkBoxes) {
                 if (b.isSelected()) cnt++;
             }
 
-            String selectedItem = bx2.getSelectionModel().getSelectedItem();
+            String selectedItem = keyCodexCBX.getSelectionModel().getSelectedItem();
             if (combinationLT.isSelected()) {
                 if (cnt == 4) {
                     //Hyper
