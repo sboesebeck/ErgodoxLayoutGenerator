@@ -202,7 +202,7 @@ public class Main extends Application {
         this.currentWindowWidth = initialWindowWidth;
         this.currentWindowHeight = initialWindowHeight;
         rightHalfOffset = initialWindowWidth / 2;
-        canvas.setPrefSize(initialWindowWidth, initialWindowHeight);
+        canvas.setPrefSize(1000, 700);
         canvas.addEventHandler(MouseEvent.MOUSE_CLICKED, new EventHandler<MouseEvent>() {
             @Override
             public void handle(MouseEvent event) {
@@ -498,32 +498,41 @@ public class Main extends Application {
         primaryStage.show();
 
         scene.widthProperty().addListener((observable, oldValue, newValue) -> {
-            System.out.println("New width: " + newValue.toString());
-            currentWindowWidth = newValue.doubleValue();
-            if (currentWindowWidth > initialWindowWidth) {
-                scaleX = currentWindowWidth / (double) initialWindowWidth;
-                rightHalfOffset = (int) (currentWindowWidth / 2);
-//                    System.out.println("Drawing with new scale of "+scaleX);
-                Platform.runLater(() -> layout(canvas));
-                ;
+//            System.out.println("New width: " + newValue.toString());
 
-            }
+            updateWindowWidth(newValue.doubleValue());
         });
         scene.heightProperty().addListener((observable, oldValue, newValue) -> {
-            System.out.println("New height: " + newValue.toString());
-            currentWindowHeight = newValue.doubleValue();
-            if (currentWindowHeight > initialWindowHeight) {
-                scaleY = currentWindowHeight / (double) initialWindowHeight;
-                Platform.runLater(() -> layout(canvas));
-                ;
-
-            }
+//            System.out.println("New height: " + newValue.toString());
+            updateWindowHeight(newValue.doubleValue());
         });
 
         //Read in config
 
         readConfig();
 
+    }
+
+    public void updateWindowHeight(double newValue) {
+        currentWindowHeight = newValue;
+        if (currentWindowHeight >= initialWindowHeight) {
+            scaleY = currentWindowHeight / (double) initialWindowHeight;
+            Platform.runLater(() -> layout(canvas));
+            ;
+
+        }
+    }
+
+    public void updateWindowWidth(double newValue) {
+        currentWindowWidth = newValue;
+        if (currentWindowWidth >= initialWindowWidth) {
+            scaleX = currentWindowWidth / (double) initialWindowWidth;
+            rightHalfOffset = (int) (currentWindowWidth / 2);
+//                    System.out.println("Drawing with new scale of "+scaleX);
+            Platform.runLater(() -> layout(canvas));
+            ;
+
+        }
     }
 
     private String askForLayerName(String o) {
@@ -592,7 +601,14 @@ public class Main extends Application {
         fc.setInitialFileName(currentKeymap + "_highres.png");
         File file = fc.showSaveDialog(null);
         if (file == null) return;
+        double width = canvas.getWidth();
+        double height = canvas.getHeight();
 
+//        canvas.setPrefHeight(1080);
+//        canvas.setPrefWidth(1920);
+        updateWindowHeight(1080);
+        updateWindowWidth(1920);
+        layout(canvas);
         unmarkKey();
         layerCombo.getSelectionModel().select(0);
         WritableImage image = canvas.snapshot(new SnapshotParameters(), null);
@@ -602,8 +618,13 @@ public class Main extends Application {
         createLayer.setVisible(false);
         deleteLayer.setVisible(false);
         keyDescription.setVisible(false);
+        renameLayer.setVisible(false);
+
+
         for (int i = 0; i < layerCombo.getItems().size(); i++) {
             layerCombo.getSelectionModel().select(i);
+            currentLayer = ergodoxLayout.getLayers().get(layerCombo.getItems().get(i));
+            layout(canvas);
             image = canvas.snapshot(new SnapshotParameters(), null);
             img.getGraphics().drawImage(SwingFXUtils.fromFXImage(image, null), 0, i * snapshowHeight, null);
         }
@@ -614,9 +635,20 @@ public class Main extends Application {
         } catch (IOException e) {
             // TODO: handle exception here
         }
+        Platform.runLater(() -> {
+            layerCombo.getSelectionModel().select(0);
+            updateWindowHeight(height);
+            updateWindowWidth(width);
+//            canvas.setPrefHeight(height);
+//            canvas.setPrefWidth(width);
+
+//            layout(canvas);
+        });
+
         createLayer.setVisible(true);
         deleteLayer.setVisible(true);
         keyDescription.setVisible(true);
+        renameLayer.setVisible(true);
     }
 
     private void readConfig() {

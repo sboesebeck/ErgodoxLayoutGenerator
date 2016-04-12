@@ -56,13 +56,14 @@
 
 package de.caluga.ergodox.macrodialog;
 
+import de.caluga.ergodox.macros.TypeMacro;
 import javafx.event.ActionEvent;
 import javafx.geometry.Insets;
+import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.GridPane;
-
-import java.util.Optional;
+import javafx.stage.Stage;
 
 /**
  * User: Stephan Bösebeck
@@ -74,13 +75,8 @@ import java.util.Optional;
 public class MacroEditor {
 
     public void showEditor() {
-        // Create the custom dialog.
-        Dialog<ButtonType> dialog = new Dialog<>();
-        dialog.setTitle("Edit Macro");
-        dialog.setHeaderText("Macro Editor");
-        dialog.setResizable(true);
-        ButtonType assignButtonType = new ButtonType("Save", ButtonBar.ButtonData.OK_DONE);
-        dialog.getDialogPane().getButtonTypes().addAll(assignButtonType, ButtonType.CANCEL);
+        Stage macroEditor = new Stage();
+
 
         GridPane grid = new GridPane();
         grid.setHgap(10);
@@ -106,6 +102,9 @@ public class MacroEditor {
         p.getChildren().add(holdKeyMacroRB);
         p.getChildren().add(customMacro);
 
+        typeMacroRB.setSelected(true);
+        showTypeMacro(content);
+
         typeMacroRB.addEventHandler(ActionEvent.ACTION, event -> {
             showTypeMacro(content);
             content.requestLayout();
@@ -124,10 +123,21 @@ public class MacroEditor {
             showCustomMacro(content);
         });
 
+        TextField nameTF = new TextField();
+        grid.add(new Label("Macro name:"), 0, 0);
+        grid.add(nameTF, 1, 0);
+        grid.add(new Label("Type:"), 0, 1);
+        grid.add(p, 1, 1);
+        grid.add(content, 0, 2, 2, 1);
 
-        grid.add(new Label("Type:"), 0, 0);
-        grid.add(p, 1, 0);
-        grid.add(content, 0, 1, 2, 1);
+
+        FlowPane fp = new FlowPane();
+        Button ok = new Button("OK");
+        Button cancel = new Button("cancel");
+        fp.getChildren().add(ok);
+        fp.getChildren().add(cancel);
+
+        grid.add(fp, 1, 3);
 
 
 //        grid.add(new Label("Key typed:"), 0, 2);
@@ -136,23 +146,26 @@ public class MacroEditor {
 //        grid.add(layerCBX, 1, 1);
 
 // Enable/Disable login button depending on whether a username was entered.
+        Scene scene = new Scene(grid, 600, 300);
+
+        macroEditor.setTitle("MacroEditor");
+        macroEditor.setScene(scene);
+        macroEditor.show();
+
+        cancel.addEventHandler(ActionEvent.ACTION, event -> {
+            macroEditor.close();
+        });
+        ok.addEventHandler(ActionEvent.ACTION, event -> {
+            TypeMacro tm = new TypeMacro();
+
+            macroEditor.close();
+        });
 
 
-        dialog.getDialogPane().setContent(grid);
 
 // Request focus on the username field by default.
 //        Platform.runLater(() -> keyCBX.requestFocus());
 
-
-        Optional<ButtonType> result = dialog.showAndWait();
-
-        result.ifPresent(btn -> {
-            //Got selection ok
-//            if (btn.getButtonData().equals(ButtonBar.ButtonData.CANCEL_CLOSE)) return;
-//            String key = keyCBX.getSelectionModel().getSelectedItem();
-//            String layer = layerCBX.getSelectionModel().getSelectedItem();
-//            k.setValue("LT(" + layer + "," + key + ")");
-        });
 
     }
 
@@ -174,7 +187,95 @@ public class MacroEditor {
     private void showTypeMacro(GridPane content) {
         content.getChildren().clear();
         content.add(new Label("Type macro:"), 0, 0);
-        content.add(new TextField("U(SFT),D(A)"), 0, 1);
+        TextField tf = new TextField("");
+        tf.setPrefWidth(500);
+        content.add(tf, 0, 1);
+        Button btn = new Button("Convert text to macro");
+        content.add(btn, 0, 2);
+        btn.addEventHandler(ActionEvent.ACTION, event -> {
+            String txt = tf.getText();
+            String newTxt = macronifyString(txt);
+            tf.setText(newTxt);
+        });
+        content.add(new Label("Description: Keycodes in Macros do not have the KC_PREFIX, hence only KC_KEYCODES work\nD(KEYCODE) - DOWN key\nU(KEYCODE) - Release key\nT(KEYCODE) - Type key\nW(MILLIES) - wait milliseconds"), 0, 3, 2, 1);
 
+
+    }
+
+    private String macronifyString(String txt) {
+        StringBuilder b = new StringBuilder();
+        boolean shift = false;
+        for (int i = 0; i < txt.length(); i++) {
+            char c = txt.charAt(i);
+            if (Character.isAlphabetic(c) && Character.isUpperCase(c)) {
+                if (!shift) {
+                    b.append("D(LSFT),");
+                }
+                b.append("T(").append(Character.toString(c)).append(")");
+                shift = true;
+            } else if (Character.isAlphabetic(c) && !Character.isUpperCase(c)) {
+                if (shift) {
+                    b.append("U(LSFT),");
+                }
+                b.append("T(").append(Character.toString(c)).append(")");
+                shift = false;
+            } else if (Character.isDigit(c)) {
+                if (shift) {
+                    b.append("U(LSFT),");
+                }
+                shift = false;
+                b.append("T(" + Character.toString(c) + ")");
+            } else if (Character.isSpaceChar(c)) {
+                if (shift) {
+                    b.append("U(LSFT),");
+                }
+                shift = false;
+                b.append("T(SPC)");
+            } else {
+                if (shift) {
+                    b.append("U(LSFT),");
+                }
+                shift = false;
+                switch (c) {
+                    case '!':
+                        b.append("T(EXLM)");
+                        break;
+                    case ':':
+                        b.append("T(COLN)");
+                        break;
+                    case '#':
+                        b.append("T(HASH)");
+                        break;
+                    case ';':
+                        b.append("T(SCLN)");
+                        break;
+                    case '$':
+                        b.append("T(DLR)");
+                        break;
+                    case '-':
+                        b.append("T(MINS)");
+                        break;
+                    case '(':
+                        b.append("T(LBRC)");
+                        break;
+                    case ')':
+                        b.append("T(RBRC)");
+                        break;
+                    case '{':
+                        b.append("T(LCBRK)");
+                        break;
+                    case '}':
+                        b.append("T(RCBRK)");
+                        break;
+                    default:
+                        b.append("?");
+                        b.append(Character.toString(c));
+                        b.append("?");
+                }
+            }
+            b.append(",");
+        }
+        b.setLength(b.length() - 1);
+        return b.toString();
     }
 }
