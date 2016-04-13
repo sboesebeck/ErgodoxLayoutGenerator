@@ -76,6 +76,38 @@ public class KeymapParser {
     private StringBuilder fileContent;
 
 
+    public static MacroAction parseMacroAction(String token) {
+        MacroAction a = new MacroAction();
+        if (token.startsWith("D(")) {
+            a.setAction(MacroAction.Action.DOWN);
+            a.setCode(ErgodoxKeyCode.valueOf("KC_" + token.substring(2, token.length() - 1)));
+
+        } else if (token.startsWith("U(")) {
+            a.setAction(MacroAction.Action.UP);
+            a.setCode(ErgodoxKeyCode.valueOf("KC_" + token.substring(2, token.length() - 1)));
+
+        } else if (token.startsWith("T(")) {
+            a.setAction(MacroAction.Action.TYPE);
+            a.setCode(ErgodoxKeyCode.valueOf("KC_" + token.substring(2, token.length() - 1)));
+        } else if (token.startsWith("W(")) {
+            a.setAction(MacroAction.Action.WAIT);
+            a.setWait(Integer.parseInt(token.substring(2, token.length() - 1)));
+        } else {
+            throw new RuntimeException("Cannot handle Macro action " + token);
+        }
+        return a;
+    }
+
+    public static List<MacroAction> parseActionList(String typing) {
+        List<MacroAction> list = new ArrayList<>();
+        for (String token : typing.split(",")) {
+            MacroAction a = parseMacroAction(token);
+            if (a == null) continue;
+            list.add(a);
+        }
+        return list;
+    }
+
     public ErgodoxLayout parse(String file) throws Exception {
         BufferedReader br = new BufferedReader(new FileReader(file));
         String l;
@@ -285,17 +317,7 @@ public class KeymapParser {
 //        System.out.println(fileContent.toString());
     }
 
-    private List<MacroAction> parseActionList(String typing) {
-        List<MacroAction> list = new ArrayList<>();
-        for (String token : typing.split(",")) {
-            MacroAction a = parseMacroAction(token);
-            if (a == null) continue;
-            list.add(a);
-        }
-        return list;
-    }
-
-    private MacroAction parseMacroAction(String token) {
+    public static MacroAction parseMacroAction(String token) {
         MacroAction a = new MacroAction();
         if (token.startsWith("D(")) {
             a.setAction(MacroAction.Action.DOWN);
@@ -312,8 +334,7 @@ public class KeymapParser {
             a.setAction(MacroAction.Action.WAIT);
             a.setWait(Integer.parseInt(token.substring(2, token.length() - 1)));
         } else {
-            System.err.println("Cannot handle this macro action: " + token);
-            return null;
+            throw new RuntimeException("Cannot handle Macro action " + token);
         }
         return a;
     }

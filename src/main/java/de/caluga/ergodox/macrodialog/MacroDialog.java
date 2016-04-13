@@ -78,6 +78,8 @@ import java.util.Optional;
 public class MacroDialog {
 
     private final ErgodoxLayout ergodoxLayout;
+    private ComboBox<String> macroCBX;
+    private Dialog<ButtonType> dialog;
 
     public MacroDialog(ErgodoxLayout layout) {
         this.ergodoxLayout = layout;
@@ -85,7 +87,7 @@ public class MacroDialog {
 
     public void show(Key k) {
         // Create the custom dialog.
-        Dialog<ButtonType> dialog = new Dialog<>();
+        dialog = new Dialog<>();
         dialog.setTitle("Choose Macro");
         dialog.setHeaderText("available Macros");
 
@@ -98,30 +100,40 @@ public class MacroDialog {
         grid.setPadding(new Insets(20, 150, 10, 10));
 
 
-        ComboBox<String> bx = new ComboBox<>();
-        for (String macroName : ergodoxLayout.getMacros().keySet()) {
-            bx.getItems().add(macroName);
-        }
+        macroCBX = new ComboBox<>();
+        macroCBX.setPrefWidth(350);
+        updateMacros();
         String assignedValue = k.getValue();
         if (assignedValue != null && assignedValue.startsWith("M(")) {
             //old macro
-            bx.getSelectionModel().select(assignedValue.substring(2, assignedValue.length() - 1));
+            macroCBX.getSelectionModel().select(assignedValue.substring(2, assignedValue.length() - 1));
         }
-        bx.addEventHandler(KeyEvent.KEY_PRESSED, event -> {
+        macroCBX.addEventHandler(KeyEvent.KEY_PRESSED, event -> {
             if (event.getCode().equals("ENTER")) {
-                k.setValue("M(" + bx.getSelectionModel().getSelectedItem() + ")");
+                k.setValue("M(" + macroCBX.getSelectionModel().getSelectedItem() + ")");
                 dialog.close();
             }
         });
 
         Label macroDescription = new Label("Macro description");
         grid.add(new Label("Macro:"), 0, 0);
-        grid.add(bx, 1, 0);
+        grid.add(macroCBX, 1, 0);
         grid.add(macroDescription, 0, 1, 2, 1);
 
+// Enable/Disable login button depending on whether a username was entered.
+        Node assignButton = dialog.getDialogPane().lookupButton(assignButtonType);
+        assignButton.setDisable(true);
         Button newMacro = new Button("New macro");
         newMacro.addEventHandler(ActionEvent.ACTION, event -> {
-            new MacroEditor().showEditor();
+            MacroEditor me = new MacroEditor();
+            me.showEditor();
+            if (me.getTheMacro() != null) {
+                ergodoxLayout.getMacros().put(me.getTheMacro().getName(), me.getTheMacro());
+                updateMacros();
+                macroCBX.getSelectionModel().select(me.getTheMacro().getName());
+                assignButton.setDisable(false);
+                macroDescription.setText(me.getTheMacro().getDescription());
+            }
         });
         Button delMacro = new Button("Del macro");
         Button editMacro = new Button("Edit macro");
@@ -135,18 +147,15 @@ public class MacroDialog {
 
         grid.add(pn, 2, 0, 1, 3);
 
-// Enable/Disable login button depending on whether a username was entered.
-        Node assignButton = dialog.getDialogPane().lookupButton(assignButtonType);
-        assignButton.setDisable(true);
 
-        bx.addEventHandler(ActionEvent.ACTION, event -> {
+        macroCBX.addEventHandler(ActionEvent.ACTION, event -> {
             assignButton.setDisable(false);
         });
 
         dialog.getDialogPane().setContent(grid);
 
 // Request focus on the username field by default.
-        Platform.runLater(() -> bx.requestFocus());
+        Platform.runLater(() -> macroCBX.requestFocus());
 
 
         Optional<ButtonType> result = dialog.showAndWait();
@@ -154,9 +163,18 @@ public class MacroDialog {
         result.ifPresent(btn -> {
             if (btn.getButtonData().equals(ButtonBar.ButtonData.CANCEL_CLOSE)) return;
             //Got selection ok
-            String selectedItem = bx.getSelectionModel().getSelectedItem();
+            String selectedItem = macroCBX.getSelectionModel().getSelectedItem();
             k.setValue("M(" + selectedItem + ")");
         });
+
+    }
+
+    private void updateMacros() {
+        macroCBX.getItems().clear();
+        for (String macroName : ergodoxLayout.getMacros().keySet()) {
+            macroCBX.getItems().add(macroName);
+        }
+
 
     }
 }

@@ -104,7 +104,7 @@ public class TypeMacro extends Macro {
     @Override
     public String getDescription() {
         StringBuilder b = new StringBuilder();
-        b.append("Macro ").append("\n");
+        b.append("Macro '").append(getName()).append("'\n");
         b.append("Typing macro: ");
         b.append("\n");
         b.append(getMacroActionListString(getActions()));

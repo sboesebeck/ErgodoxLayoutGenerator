@@ -56,6 +56,12 @@
 
 package de.caluga.ergodox.macrodialog;
 
+import de.caluga.ergodox.ComboBoxAutocompleter;
+import de.caluga.ergodox.ErgodoxKeyCode;
+import de.caluga.ergodox.KeymapParser;
+import de.caluga.ergodox.macros.CustomMacro;
+import de.caluga.ergodox.macros.LongPressAndTypeMacro;
+import de.caluga.ergodox.macros.Macro;
 import de.caluga.ergodox.macros.TypeMacro;
 import javafx.event.ActionEvent;
 import javafx.geometry.Insets;
@@ -73,6 +79,15 @@ import javafx.stage.Stage;
  * TODO: Add documentation here
  */
 public class MacroEditor {
+
+    private TextField macroContent1;
+    private TextField nameTF;
+    private Macro theMacro;
+    private TextField macroContent2;
+    private ComboBox<Integer> timeoutCBX;
+    private TextField focusedTF;
+    private TextArea textArea;
+
 
     public void showEditor() {
         Stage macroEditor = new Stage();
@@ -123,7 +138,7 @@ public class MacroEditor {
             showCustomMacro(content);
         });
 
-        TextField nameTF = new TextField();
+        nameTF = new TextField();
         grid.add(new Label("Macro name:"), 0, 0);
         grid.add(nameTF, 1, 0);
         grid.add(new Label("Type:"), 0, 1);
@@ -146,63 +161,200 @@ public class MacroEditor {
 //        grid.add(layerCBX, 1, 1);
 
 // Enable/Disable login button depending on whether a username was entered.
-        Scene scene = new Scene(grid, 600, 300);
+        Scene scene = new Scene(grid, 1000, 400);
 
-        macroEditor.setTitle("MacroEditor");
-        macroEditor.setScene(scene);
-        macroEditor.show();
 
         cancel.addEventHandler(ActionEvent.ACTION, event -> {
+            theMacro = null;
             macroEditor.close();
         });
         ok.addEventHandler(ActionEvent.ACTION, event -> {
-            TypeMacro tm = new TypeMacro();
+            Macro m = null;
+            if (typeMacroRB.isSelected()) {
+                m = getTypeMacro();
 
+            } else if (longPMacroRB.isSelected()) {
+                m = getLongPressMacro();
+
+            } else if (customMacro.isSelected()) {
+                m = getCustomMacro();
+            }
+            if (m == null) return;
+            theMacro = m;
             macroEditor.close();
         });
 
+        macroEditor.setTitle("MacroEditor");
+        macroEditor.setScene(scene);
+        macroEditor.showAndWait();
 
 
-// Request focus on the username field by default.
-//        Platform.runLater(() -> keyCBX.requestFocus());
+    }
 
-
+    private Macro getCustomMacro() {
+        CustomMacro m = new CustomMacro();
+        m.setName(nameTF.getText());
+        m.setContent(textArea.getText());
+        return m;
     }
 
     private void showCustomMacro(GridPane content) {
         content.getChildren().clear();
-        TextArea txt = new TextArea();
+        textArea = new TextArea();
         content.add(new Label("Custom macro content"), 0, 0);
-        content.add(txt, 0, 1);
+        content.add(textArea, 0, 1);
     }
 
     private void showHoldKeyMacro(GridPane content) {
-
+        content.getChildren().clear();
     }
 
     private void showLongPressMacro(GridPane content) {
+        content.getChildren().clear();
+        content.add(new Label("long press and type macro."), 0, 0, 3, 1);
+        content.add(new Label("Timeout in ms: "), 0, 1);
+        timeoutCBX = createTimeoutCBX();
+        content.add(timeoutCBX, 1, 1);
+        content.add(new Label("typing part:"), 0, 3);
+        macroContent1 = new TextField("");
+        macroContent1.setPrefWidth(500);
+        content.add(macroContent1, 1, 3);
+        content.add(new Label("holding key part:"), 0, 2);
+        macroContent2 = new TextField("");
+        content.add(macroContent2, 1, 2);
+        Button btn = new Button("Convert text to macro");
+        content.add(btn, 2, 3);
+        btn.addEventHandler(ActionEvent.ACTION, event -> {
+            String txt = macroContent1.getText();
+            String newTxt = macronifyString(txt);
+            macroContent1.setText(newTxt);
+        });
+        btn = new Button("Convert text to macro");
+        content.add(btn, 2, 2);
+        btn.addEventHandler(ActionEvent.ACTION, event -> {
+            String txt = macroContent2.getText();
+            String newTxt = macronifyString(txt);
+            macroContent2.setText(newTxt);
+        });
+
+
+        ComboBox<String> validKeyCodesCbx = new ComboBox<>();
+        for (ErgodoxKeyCode c : ErgodoxKeyCode.values()) {
+            if (c.name().startsWith("KC_")) {
+                validKeyCodesCbx.getItems().add(c.name());
+            }
+        }
+        ComboBoxAutocompleter<String> autocompleter = new ComboBoxAutocompleter<>(validKeyCodesCbx);
+
+
+//        content.add(validKeyCodesCbx, 3, 1);
+//        validKeyCodesCbx.addEventHandler(ActionEvent.ACTION, event -> {
+//
+//
+//        });
+
+
+        Button insert = new Button("T");
+        insert.addEventHandler(ActionEvent.ACTION, event -> {
+            if (focusedTF != null && validKeyCodesCbx.getSelectionModel().getSelectedItem() != null) {
+                focusedTF.insertText(focusedTF.getCaretPosition(), "T(" + validKeyCodesCbx.getSelectionModel().getSelectedItem().substring(3) + ")");//no KC_ prefix
+            }
+        });
+        Button down = new Button("D");
+        down.addEventHandler(ActionEvent.ACTION, event -> {
+            if (focusedTF != null && validKeyCodesCbx.getSelectionModel().getSelectedItem() != null) {
+                focusedTF.insertText(focusedTF.getCaretPosition(), "D(" + validKeyCodesCbx.getSelectionModel().getSelectedItem().substring(3) + ")");//no KC_ prefix
+            }
+        });
+        Button up = new Button("U");
+        up.addEventHandler(ActionEvent.ACTION, event -> {
+            if (focusedTF != null && validKeyCodesCbx.getSelectionModel().getSelectedItem() != null) {
+                focusedTF.insertText(focusedTF.getCaretPosition(), "U(" + validKeyCodesCbx.getSelectionModel().getSelectedItem().substring(3) + ")");//no KC_ prefix
+            }
+        });
+        FlowPane pn = new FlowPane();
+        pn.getChildren().add(insert);
+        pn.getChildren().add(down);
+        pn.getChildren().add(up);
+        pn.getChildren().add(validKeyCodesCbx);
+        content.add(pn, 2, 1);
+
+        validKeyCodesCbx.getEditor().setText("KC_");
+//        content.add(insert,2,1);
+
+        macroContent1.focusedProperty().addListener((observable, oldValue, newValue) -> {
+            focusedTF = macroContent1;
+        });
+
+        macroContent2.focusedProperty().addListener((observable, oldValue, newValue) -> {
+            focusedTF = macroContent2;
+        });
+        content.add(new Label("Long press macro will issue different keys, depending on how long the key is pressed\nAttention: you need to 'undo' your held keys in the type phase.\nthis means, if you want to do SHIFT when held, type S if not, your config will look like this:\nholding key: D(LSFT)\ntyping part: U(LSFT),T(S)"), 0, 4, 3, 1);
+
 
     }
 
     private void showTypeMacro(GridPane content) {
         content.getChildren().clear();
-        content.add(new Label("Type macro:"), 0, 0);
-        TextField tf = new TextField("");
-        tf.setPrefWidth(500);
-        content.add(tf, 0, 1);
+        content.add(new Label("type macro:"), 0, 0, 2, 1);
+
+        macroContent1 = new TextField("");
+        macroContent1.setPrefWidth(500);
+        content.add(macroContent1, 0, 1);
         Button btn = new Button("Convert text to macro");
         content.add(btn, 0, 2);
         btn.addEventHandler(ActionEvent.ACTION, event -> {
-            String txt = tf.getText();
+            String txt = macroContent1.getText();
             String newTxt = macronifyString(txt);
-            tf.setText(newTxt);
+            macroContent1.setText(newTxt);
         });
         content.add(new Label("Description: Keycodes in Macros do not have the KC_PREFIX, hence only KC_KEYCODES work\nD(KEYCODE) - DOWN key\nU(KEYCODE) - Release key\nT(KEYCODE) - Type key\nW(MILLIES) - wait milliseconds"), 0, 3, 2, 1);
 
+    }
 
+    private ComboBox<Integer> createTimeoutCBX() {
+        ComboBox<Integer> cbx = new ComboBox<>();
+        for (int i = 50; i < 250; i += 10) cbx.getItems().add(i);
+        cbx.getSelectionModel().select(Integer.valueOf(150));
+        return cbx;
+    }
+
+    private Macro getTypeMacro() {
+        TypeMacro tm = new TypeMacro();
+        tm.setName(nameTF.getText());
+        try {
+            tm.setActions(KeymapParser.parseActionList(macroContent1.getText().toUpperCase()));
+            return tm;
+        } catch (Exception e) {
+            Alert a = new Alert(Alert.AlertType.ERROR, "Could not parse content! please fix:\n" + e.getMessage(), ButtonType.CLOSE);
+            a.showAndWait();
+            return null;
+        }
+    }
+
+    private Macro getLongPressMacro() {
+        LongPressAndTypeMacro lp = new LongPressAndTypeMacro();
+        lp.setName(nameTF.getText());
+        try {
+            lp.setShortStrokes(KeymapParser.parseActionList(macroContent2.getText().toUpperCase()));
+        } catch (Exception e) {
+            Alert a = new Alert(Alert.AlertType.ERROR, "Could not parse type! please fix:\n" + e.getMessage(), ButtonType.CLOSE);
+            a.showAndWait();
+            return null;
+        }
+        try {
+            lp.setLongPressKeys(KeymapParser.parseActionList(macroContent1.getText().toUpperCase()));
+        } catch (Exception e) {
+            Alert a = new Alert(Alert.AlertType.ERROR, "Could not parse hold! please fix:\n" + e.getMessage(), ButtonType.CLOSE);
+            a.showAndWait();
+            return null;
+        }
+        lp.setTimeout(timeoutCBX.getSelectionModel().getSelectedItem());
+        return lp;
     }
 
     private String macronifyString(String txt) {
+        if (txt.length() == 0) return txt;
         StringBuilder b = new StringBuilder();
         boolean shift = false;
         for (int i = 0; i < txt.length(); i++) {
@@ -217,7 +369,7 @@ public class MacroEditor {
                 if (shift) {
                     b.append("U(LSFT),");
                 }
-                b.append("T(").append(Character.toString(c)).append(")");
+                b.append("T(").append(Character.toString(c).toUpperCase()).append(")");
                 shift = false;
             } else if (Character.isDigit(c)) {
                 if (shift) {
@@ -277,5 +429,13 @@ public class MacroEditor {
         }
         b.setLength(b.length() - 1);
         return b.toString();
+    }
+
+    public Macro getTheMacro() {
+        return theMacro;
+    }
+
+    public void setTheMacro(Macro theMacro) {
+        this.theMacro = theMacro;
     }
 }
