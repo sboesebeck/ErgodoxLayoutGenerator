@@ -76,6 +76,17 @@ public class KeymapParser {
     private StringBuilder fileContent;
 
 
+
+    public static List<MacroAction> parseActionList(String typing) {
+        List<MacroAction> list = new ArrayList<>();
+        for (String token : typing.split(",")) {
+            MacroAction a = parseMacroAction(token);
+            if (a == null) continue;
+            list.add(a);
+        }
+        return list;
+    }
+
     public static MacroAction parseMacroAction(String token) {
         MacroAction a = new MacroAction();
         if (token.startsWith("D(")) {
@@ -96,16 +107,6 @@ public class KeymapParser {
             throw new RuntimeException("Cannot handle Macro action " + token);
         }
         return a;
-    }
-
-    public static List<MacroAction> parseActionList(String typing) {
-        List<MacroAction> list = new ArrayList<>();
-        for (String token : typing.split(",")) {
-            MacroAction a = parseMacroAction(token);
-            if (a == null) continue;
-            list.add(a);
-        }
-        return list;
     }
 
     public ErgodoxLayout parse(String file) throws Exception {
@@ -315,28 +316,6 @@ public class KeymapParser {
         layout.setMacros(keymapMacros);
         return layout;
 //        System.out.println(fileContent.toString());
-    }
-
-    public static MacroAction parseMacroAction(String token) {
-        MacroAction a = new MacroAction();
-        if (token.startsWith("D(")) {
-            a.setAction(MacroAction.Action.DOWN);
-            a.setCode(ErgodoxKeyCode.valueOf("KC_" + token.substring(2, token.length() - 1)));
-
-        } else if (token.startsWith("U(")) {
-            a.setAction(MacroAction.Action.UP);
-            a.setCode(ErgodoxKeyCode.valueOf("KC_" + token.substring(2, token.length() - 1)));
-
-        } else if (token.startsWith("T(")) {
-            a.setAction(MacroAction.Action.TYPE);
-            a.setCode(ErgodoxKeyCode.valueOf("KC_" + token.substring(2, token.length() - 1)));
-        } else if (token.startsWith("W(")) {
-            a.setAction(MacroAction.Action.WAIT);
-            a.setWait(Integer.parseInt(token.substring(2, token.length() - 1)));
-        } else {
-            throw new RuntimeException("Cannot handle Macro action " + token);
-        }
-        return a;
     }
 
     private int getTextBetweenBraces(int idx, int brCount) {

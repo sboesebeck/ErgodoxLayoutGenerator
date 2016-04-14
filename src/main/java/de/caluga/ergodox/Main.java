@@ -70,7 +70,6 @@ import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.SnapshotParameters;
 import javafx.scene.control.*;
-import javafx.scene.effect.DropShadow;
 import javafx.scene.image.WritableImage;
 import javafx.scene.input.ContextMenuEvent;
 import javafx.scene.input.KeyEvent;
@@ -109,7 +108,7 @@ public class Main extends Application {
     public int rightHalfOffset = 400;
     private double scaleX = 1.0;
     private double scaleY = 1.0;
-    private Label selectedGuiKey = null;
+    private GuiKey selectedGuiKey = null;
     private Button setSourceDir;
     private Label sourceDirLabel;
     private Button createKeymap;
@@ -144,6 +143,8 @@ public class Main extends Application {
     private Label led3;
     private ErgodoxLayout ergodoxLayout;
     private String lastOpenedFile = "last_opened_file";
+
+    private List<GuiKey> guiKeys = new ArrayList<>();
 
 
     public static void main(String[] args) {
@@ -207,8 +208,10 @@ public class Main extends Application {
             @Override
             public void handle(MouseEvent event) {
                 if (!event.isConsumed()) {
-                    unmarkKey();
+                    if (selectedGuiKey == null) return;
+                    selectedGuiKey.deselect();
                     selectedGuiKey = null;
+                    layout(canvas);
                 }
             }
         });
@@ -234,70 +237,69 @@ public class Main extends Application {
                 idx++;
                 continue;
             }
-            final Label label = new Label("");
-            label.backgroundProperty().setValue(new Background(new BackgroundFill(Color.LIGHTGRAY, new CornerRadii(5), Insets.EMPTY)));
-            label.setTextAlignment(TextAlignment.CENTER);
-            label.borderProperty().setValue(new Border(new BorderStroke(Color.BLACK, BorderStrokeStyle.SOLID, new CornerRadii(5), new BorderWidths(1))));
-            DropShadow ds = new DropShadow();
-            ds.setOffsetY(3.0f);
-            ds.setColor(Color.color(0.4f, 0.4f, 0.4f));
-            label.setEffect(ds);
+            final GuiKey gk = new GuiKey();
+
+//            label.backgroundProperty().setValue(new Background(new BackgroundFill(Color.LIGHTGRAY, new CornerRadii(5), Insets.EMPTY)));
+//            label.setTextAlignment(TextAlignment.CENTER);
+//            label.borderProperty().setValue(new Border(new BorderStroke(Color.BLACK, BorderStrokeStyle.SOLID, new CornerRadii(5), new BorderWidths(1))));
+//            DropShadow ds = new DropShadow();
+//            ds.setOffsetY(3.0f);
+//            ds.setColor(Color.color(0.4f, 0.4f, 0.4f));
+//            label.setEffect(ds);
             final int i = idx;
             MenuItem clearMI = new MenuItem("clear");
             clearMI.addEventHandler(ActionEvent.ACTION, event -> {
                 currentLayer.getLayout().get(i).setValue("KC_TRNS");
-                unmarkKey();
+                selectedGuiKey.deselect();
                 selectedGuiKey = null;
                 Platform.runLater(() -> layout(canvas));
-                ;
-
             });
-            label.addEventHandler(ContextMenuEvent.CONTEXT_MENU_REQUESTED, event -> {
-                if (selectedGuiKey != null) unmarkKey();
-                markLabel(label);
-                selectedGuiKey = label;
+            gk.getInner().addEventHandler(ContextMenuEvent.CONTEXT_MENU_REQUESTED, event -> {
+                if (selectedGuiKey != null) selectedGuiKey.deselect();
+                gk.select();
+                selectedGuiKey = gk;
+                layout(canvas);
             });
             MenuItem assignKey = new MenuItem("Assign key");
             assignKey.addEventHandler(ActionEvent.ACTION, event -> {
                 doAssignKey(currentLayer.getLayout().get(i));
                 Platform.runLater(() -> layout(canvas));
-                ;
             });
 
             MenuItem assignMacro = new MenuItem("Assign Macro");
             assignMacro.addEventHandler(ActionEvent.ACTION, event -> {
                 doAssignMacro(currentLayer.getLayout().get(i));
                 Platform.runLater(() -> layout(canvas));
-                ;
             });
             MenuItem assignLayerToggle = new MenuItem("Assign Layertoggle");
             assignLayerToggle.addEventHandler(ActionEvent.ACTION, event -> {
                 doAssingLayerToggle(currentLayer.getLayout().get(i));
                 Platform.runLater(() -> layout(canvas));
-                ;
             });
             MenuItem assignLT = new MenuItem("Assign LayerToggle/Type");
             assignLT.addEventHandler(ActionEvent.ACTION, event -> {
                 doAssignLT(currentLayer.getLayout().get(i));
                 Platform.runLater(() -> layout(canvas));
-                ;
             });
-            label.setContextMenu(new ContextMenu(clearMI, assignKey, assignLayerToggle, assignLT, assignMacro));
-            label.addEventHandler(MouseEvent.MOUSE_CLICKED, event -> {
+            gk.getInner().setContextMenu(new ContextMenu(clearMI, assignKey, assignLayerToggle, assignLT, assignMacro));
+            gk.getInner().addEventHandler(MouseEvent.MOUSE_CLICKED, event -> {
                 event.consume();
                 if (!event.getButton().equals(MouseButton.PRIMARY)) return;
 
                 Key k1 = currentLayer.getLayout().get(i);
                 System.out.println("Key at " + i + " " + k1.getWidth() + "x" + k1.getHeight() + " value: " + k1.getValue());
                 if (selectedGuiKey != null) {
-                    unmarkKey();
+                    selectedGuiKey.deselect();
                 }
-                markLabel(label);
+                gk.select();
 
                 keyDescription.setText(getKeyDescription(k1.getValue()));
-                selectedGuiKey = label;
+                selectedGuiKey = gk;
+                layout(canvas);
             });
-            canvas.getChildren().add(label);
+            gk.addToPane(canvas);
+            guiKeys.add(gk);
+//            canvas.getChildren().add(new Rectangle(100,100,100,100));
             idx++;
         }
 
@@ -350,7 +352,6 @@ public class Main extends Application {
             if (layerCombo.getSelectionModel().getSelectedIndex() < 0) return;
             currentLayer = ergodoxLayout.getLayers().get(layerCombo.getSelectionModel().getSelectedItem());
             Platform.runLater(() -> layout(canvas));
-            ;
         });
 
         deleteLayer = new Button("delete layer");
@@ -399,7 +400,6 @@ public class Main extends Application {
             layerCombo.getItems().add(l.getName());
             layerCombo.getSelectionModel().select(layerCombo.getItems().size() - 1);
             Platform.runLater(() -> layout(canvas));
-            ;
         });
 
         renameLayer = new Button("rename layer");
@@ -437,7 +437,6 @@ public class Main extends Application {
         led1.addEventHandler(MouseEvent.MOUSE_CLICKED, event -> {
             currentLayer.setLed1(!currentLayer.isLed1());
             Platform.runLater(() -> layout(canvas));
-            ;
         });
 
         led2 = new Label("●");
@@ -445,7 +444,6 @@ public class Main extends Application {
         led2.addEventHandler(MouseEvent.MOUSE_CLICKED, event -> {
             currentLayer.setLed2(!currentLayer.isLed2());
             Platform.runLater(() -> layout(canvas));
-            ;
         });
 
         led3 = new Label("●");
@@ -453,7 +451,6 @@ public class Main extends Application {
         led3.addEventHandler(MouseEvent.MOUSE_CLICKED, event -> {
             currentLayer.setLed3(!currentLayer.isLed3());
             Platform.runLater(() -> layout(canvas));
-            ;
         });
 
 //        canvas.getChildren().add(macroCombo);
@@ -518,7 +515,6 @@ public class Main extends Application {
         if (currentWindowHeight >= initialWindowHeight) {
             scaleY = currentWindowHeight / (double) initialWindowHeight;
             Platform.runLater(() -> layout(canvas));
-            ;
 
         }
     }
@@ -530,7 +526,6 @@ public class Main extends Application {
             rightHalfOffset = (int) (currentWindowWidth / 2);
 //                    System.out.println("Drawing with new scale of "+scaleX);
             Platform.runLater(() -> layout(canvas));
-            ;
 
         }
     }
@@ -588,12 +583,6 @@ public class Main extends Application {
 
     }
 
-    private void markLabel(Label label) {
-        label.setEffect(null);
-        label.borderProperty().setValue(new Border(new BorderStroke(Color.GREEN, BorderStrokeStyle.SOLID, new CornerRadii(5), new BorderWidths(2))));
-
-        keyDescription.borderProperty().setValue(new Border(new BorderStroke(Color.GREEN, BorderStrokeStyle.SOLID, new CornerRadii(2), new BorderWidths(1))));
-    }
 
     public void saveAsPng() {
         FileChooser fc = new FileChooser();
@@ -606,10 +595,11 @@ public class Main extends Application {
 
 //        canvas.setPrefHeight(1080);
 //        canvas.setPrefWidth(1920);
-        updateWindowHeight(1080);
-        updateWindowWidth(1920);
+        updateWindowHeight(720);
+        updateWindowWidth(1280);
         layout(canvas);
-        unmarkKey();
+        if (selectedGuiKey != null)
+            selectedGuiKey.deselect();
         layerCombo.getSelectionModel().select(0);
         WritableImage image = canvas.snapshot(new SnapshotParameters(), null);
 
@@ -713,7 +703,6 @@ public class Main extends Application {
 
 
         Platform.runLater(() -> layout(canvas));
-        ;
         primaryStage.setTitle(selected.getName());
         currentKeymap = selected.getName();
     }
@@ -737,60 +726,59 @@ public class Main extends Application {
         saveConfig();
     }
 
-    private void unmarkKey() {
-        if (selectedGuiKey == null) return;
-        selectedGuiKey.borderProperty().setValue(new Border(new BorderStroke(Color.BLACK, BorderStrokeStyle.SOLID, new CornerRadii(5), new BorderWidths(1))));
-        DropShadow ds = new DropShadow();
-        ds.setOffsetY(3.0f);
-        ds.setColor(Color.color(0.4f, 0.4f, 0.4f));
-        selectedGuiKey.setEffect(ds);
-        keyDescription.setText("");
-        keyDescription.borderProperty().setValue(null);
-    }
 
     public void layout(Pane canvas) {
+
+
         int row = 0;
         int x = (int) (offsetX * scaleX);
         int y = (int) (offsetY * scaleY);
         int idx = 0;
         int xoff = 0;
         int canvasIdx = 0;
+
         for (Key k : currentLayer.getLayout()) {
+
             idx++;
             if (k != null && !(k instanceof Key.NullKey)) {
-                Label b = (Label) canvas.getChildren().get(canvasIdx++);
+                GuiKey b = guiKeys.get(canvasIdx++);
+                Color bgcol = Color.LIGHTGRAY.darker();
                 String kval = k.getValue() != null ? k.getValue() : "";
                 if (kval.endsWith("SFT") || kval.endsWith("CTL") || kval.endsWith("ALT") || kval.endsWith("GUI")) {
-                    b.backgroundProperty().setValue(new Background(new BackgroundFill(Color.LIGHTBLUE, new CornerRadii(5), Insets.EMPTY)));
+                    bgcol = Color.LIGHTBLUE.darker();
+
                 } else if (kval.startsWith("LT(")) {
-                    b.backgroundProperty().setValue(new Background(new BackgroundFill(Color.LIGHTGREEN, new CornerRadii(5), Insets.EMPTY)));
+                    bgcol = Color.LIGHTGREEN.darker();
                 } else if (kval.startsWith("M(")) {
-                    b.backgroundProperty().setValue(new Background(new BackgroundFill(Color.LIGHTYELLOW, new CornerRadii(5), Insets.EMPTY)));
+                    bgcol = Color.LIGHTYELLOW.darker();
                 } else if (kval.startsWith("TG(")) {
-                    b.backgroundProperty().setValue(new Background(new BackgroundFill(Color.LIGHTCORAL, new CornerRadii(5), Insets.EMPTY)));
+                    bgcol = Color.LIGHTCORAL.darker();
                 } else if (kval.contains("_T(")) {
-                    b.backgroundProperty().setValue(new Background(new BackgroundFill(Color.LIGHTSKYBLUE, new CornerRadii(5), Insets.EMPTY)));
+                    bgcol = Color.LIGHTSKYBLUE.darker();
                 } else if (kval.contains("(")) {
-                    b.backgroundProperty().setValue(new Background(new BackgroundFill(Color.LIGHTCYAN, new CornerRadii(5), Insets.EMPTY)));
-
-                } else {
-                    b.backgroundProperty().setValue(new Background(new BackgroundFill(Color.LIGHTGRAY, new CornerRadii(5), Insets.EMPTY)));
+                    bgcol = Color.LIGHTCYAN.darker();
                 }
+                b.setInnerColor(bgcol.brighter());
+                b.setOuterColor(bgcol);
+//                b.backgroundProperty().setValue(new Background(new BackgroundFill(bgcol, new CornerRadii(5), Insets.EMPTY)));
                 b.setText(getKeyDisplayText(kval));
-                b.setFont(Font.font(8));
-                b.setAlignment(Pos.CENTER);
-                b.setTextAlignment(TextAlignment.CENTER);
-                b.setContentDisplay(ContentDisplay.CENTER);
-                b.setMaxWidth(k.getWidth() * pixelWidth * scaleX);
-                b.setPrefWidth(k.getWidth() * pixelWidth * scaleX);
-                b.setMinWidth(k.getWidth() * pixelWidth * scaleX);
+//                b.setFont(Font.font(8));
+//                b.setAlignment(Pos.CENTER);
+//                b.setTextAlignment(TextAlignment.CENTER);
+//                b.setContentDisplay(ContentDisplay.CENTER);
+                b.setWidth(k.getWidth() * pixelWidth * scaleX);
+                b.setHeight(k.getHeight() * pixelWidth * scaleY);
+//                b.setMaxWidth(k.getWidth() * pixelWidth * scaleX);
+//                b.setPrefWidth(k.getWidth() * pixelWidth * scaleX);
+//                b.setMinWidth(k.getWidth() * pixelWidth * scaleX);
+//
+//                b.setMaxHeight(k.getHeight() * pixelHeight * scaleY);
+//                b.setPrefHeight(k.getHeight() * pixelHeight * scaleY);
+//                b.setMinHeight(k.getHeight() * pixelHeight * scaleY);
 
-                b.setMaxHeight(k.getHeight() * pixelHeight * scaleY);
-                b.setPrefHeight(k.getHeight() * pixelHeight * scaleY);
-                b.setMinHeight(k.getHeight() * pixelHeight * scaleY);
-
-                b.relocate(x + k.getxOffset() * scaleX, y + k.getyOffset() * scaleY);
-
+                b.setX(x + k.getxOffset() * scaleX);
+                b.setY(y + k.getyOffset() * scaleY);
+                b.update();
 //                g.setFill(Color.DARKGRAY);
 //                g.fillRoundRect(x+4, y+4, k.getWidth() * pixelWidth, k.getHeight() * pixelHeight, 10, 10);
 //                g.setFill(Color.GRAY);
@@ -863,7 +851,7 @@ public class Main extends Application {
         else led3.setTextFill(Color.GRAY);
 
         keyDescription.relocate(currentWindowWidth / 2 - 100, currentWindowHeight - 150);
-
+//        canvas.getChildren().add();
     }
 
 
