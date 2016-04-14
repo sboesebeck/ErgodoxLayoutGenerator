@@ -54,108 +54,40 @@
  * If the Library as you received it specifies that a proxy can decide whether future versions of the GNU Lesser General Public License shall apply, that proxy's public statement of acceptance of any version is permanent authorization for you to choose that version for the Library.
  */
 
-package de.caluga.ergodox; /**
- * Created by stephan on 29.03.16.
- */
+package de.caluga.ergodox;
+
+import freemarker.template.Configuration;
+import freemarker.template.Template;
+import freemarker.template.TemplateExceptionHandler;
+import freemarker.template.Version;
+
+import java.io.File;
+import java.io.OutputStreamWriter;
+import java.util.HashMap;
+import java.util.Locale;
+import java.util.Map;
 
 /**
- * TODO: Add Documentation here
- **/
-public class Key {
-    private int width;
-    private int height;
+ * User: Stephan Bösebeck
+ * Date: 14.04.16
+ * Time: 22:36
+ * <p>
+ * TODO: Add documentation here
+ */
+public class KeymapWriter {
 
-    private int yOffset=0;
-    private int xOffset=0;
+    public void writeKeymapFile(ErgodoxLayout layout, File to) throws Exception {
+        Configuration cfg = new Configuration(new Version(2, 3, 4));
+        cfg.setClassForTemplateLoading(KeymapWriter.class, "/");
+        cfg.setDefaultEncoding("UTF-8");
+        cfg.setLocale(Locale.US);
+        cfg.setTemplateExceptionHandler(TemplateExceptionHandler.RETHROW_HANDLER);
 
-    private boolean skip = false;
+        Template template = cfg.getTemplate("keymap.ftl");
 
-    private String value;
-
-    public Key(int width, int height) {
-        this.width = width;
-        this.height = height;
-    }
-
-    public static Key w1h1() {
-        return new Key(1, 1);
-    }
-
-    public static Key w2h1() {
-        return new Key(2, 1);
-    }
-
-    public static Key w1h2() {
-        return new Key(1, 2);
-    }
-
-    public static Key nw1h1() {
-        return new NullKey(1, 1);
-    }
-
-    public static Key nw1h2() {
-        return new NullKey(1, 2);
-    }
-
-    public static Key nw2h1() {
-        return new NullKey(2, 1);
-    }
-
-    public int getyOffset() {
-        return yOffset;
-    }
-
-    public Key setyOffset(int yOffset) {
-        this.yOffset = yOffset;
-        return this;
-    }
-
-    public int getxOffset() {
-        return xOffset;
-    }
-
-    public Key setxOffset(int xOffset) {
-        this.xOffset = xOffset;
-        return this;
-    }
-
-    public int getWidth() {
-        return width;
-    }
-
-    public void setWidth(int width) {
-        this.width = width;
-    }
-
-    public int getHeight() {
-        return height;
-    }
-
-    public void setHeight(int height) {
-        this.height = height;
-    }
-
-    public String getValue() {
-        return value;
-    }
-
-    public void setValue(String value) {
-        this.value = value;
-    }
-
-    public boolean isSkip() {
-        return skip;
-    }
-
-    public void setSkip(boolean skip) {
-        this.skip = skip;
-    }
-
-    public static class NullKey extends Key {
-
-        public NullKey(int width, int height) {
-            super(width, height);
-            setSkip(true);
-        }
+        Map<String, Object> model = new HashMap<>();
+        model.put("layout", layout);
+        model.put("name", to.getName());
+        template.process(model, new OutputStreamWriter(System.out));
     }
 }

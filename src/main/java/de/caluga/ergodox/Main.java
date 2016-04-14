@@ -96,6 +96,7 @@ import java.util.*;
  * TODO: Add Documentation here
  **/
 public class Main extends Application {
+    public static final String BASELAYERNAME = "Base";
     private static final File configFile = new File(System.getProperty("user.home") + "/.ergodoxgenerator.conf");
     public static Properties applicationSettings;
     public final int pixelWidth = 40;
@@ -115,8 +116,8 @@ public class Main extends Application {
     private Button openBtn;
     private Button saveBtn;
     private Button reopenBtn;
-    private int initialWindowWidth;
-    private int initialWindowHeight;
+    private int basicCalculationWith;
+    private int basicCalculationHeight;
     private double currentWindowHeight;
     //    private ComboBox<String> macroCombo;
     private double currentWindowWidth;
@@ -191,18 +192,15 @@ public class Main extends Application {
 
         StackPane root = new StackPane();
 
-        ergodoxLayout = new ErgodoxLayout();
-        currentLayer = new ErgodoxLayoutLayer("Base"); //base
-        ergodoxLayout.getLayers().put(currentLayer.getName(), currentLayer);
-
+        newLayout();
 
         canvas = new Pane();
         canvas.setStyle("-fx-background-color: white;");
-        initialWindowWidth = 800;
-        initialWindowHeight = 500;
-        this.currentWindowWidth = initialWindowWidth;
-        this.currentWindowHeight = initialWindowHeight;
-        rightHalfOffset = initialWindowWidth / 2;
+        basicCalculationWith = 800;
+        basicCalculationHeight = 500;
+        this.currentWindowWidth = basicCalculationWith;
+        this.currentWindowHeight = basicCalculationHeight;
+        rightHalfOffset = basicCalculationWith / 2;
         canvas.setPrefSize(1000, 700);
         canvas.addEventHandler(MouseEvent.MOUSE_CLICKED, new EventHandler<MouseEvent>() {
             @Override
@@ -211,7 +209,7 @@ public class Main extends Application {
                     if (selectedGuiKey == null) return;
                     selectedGuiKey.deselect();
                     selectedGuiKey = null;
-                    layout(canvas);
+                    layout();
                 }
             }
         });
@@ -221,7 +219,7 @@ public class Main extends Application {
 //                currentLayer.getLayout().get(selectedKeyIndexInLayout).setValue(event.getCode().getName().toUpperCase());
 //                unmarkKey();
 //                selectedGuiKey = null;
-//                layout(canvas);
+//                layout();
 //            } else {
 //            }
             if (event.getCode().getName().equals("O")) {
@@ -252,34 +250,34 @@ public class Main extends Application {
                 currentLayer.getLayout().get(i).setValue("KC_TRNS");
                 selectedGuiKey.deselect();
                 selectedGuiKey = null;
-                Platform.runLater(() -> layout(canvas));
+                Platform.runLater(() -> layout());
             });
             gk.getInner().addEventHandler(ContextMenuEvent.CONTEXT_MENU_REQUESTED, event -> {
                 if (selectedGuiKey != null) selectedGuiKey.deselect();
                 gk.select();
                 selectedGuiKey = gk;
-                layout(canvas);
+                layout();
             });
             MenuItem assignKey = new MenuItem("Assign key");
             assignKey.addEventHandler(ActionEvent.ACTION, event -> {
                 doAssignKey(currentLayer.getLayout().get(i));
-                Platform.runLater(() -> layout(canvas));
+                Platform.runLater(() -> layout());
             });
 
             MenuItem assignMacro = new MenuItem("Assign Macro");
             assignMacro.addEventHandler(ActionEvent.ACTION, event -> {
                 doAssignMacro(currentLayer.getLayout().get(i));
-                Platform.runLater(() -> layout(canvas));
+                Platform.runLater(() -> layout());
             });
             MenuItem assignLayerToggle = new MenuItem("Assign Layertoggle");
             assignLayerToggle.addEventHandler(ActionEvent.ACTION, event -> {
                 doAssingLayerToggle(currentLayer.getLayout().get(i));
-                Platform.runLater(() -> layout(canvas));
+                Platform.runLater(() -> layout());
             });
             MenuItem assignLT = new MenuItem("Assign LayerToggle/Type");
             assignLT.addEventHandler(ActionEvent.ACTION, event -> {
                 doAssignLT(currentLayer.getLayout().get(i));
-                Platform.runLater(() -> layout(canvas));
+                Platform.runLater(() -> layout());
             });
             gk.getInner().setContextMenu(new ContextMenu(clearMI, assignKey, assignLayerToggle, assignLT, assignMacro));
             gk.getInner().addEventHandler(MouseEvent.MOUSE_CLICKED, event -> {
@@ -295,7 +293,7 @@ public class Main extends Application {
 
                 keyDescription.setText(getKeyDescription(k1.getValue()));
                 selectedGuiKey = gk;
-                layout(canvas);
+                layout();
             });
             gk.addToPane(canvas);
             guiKeys.add(gk);
@@ -329,15 +327,18 @@ public class Main extends Application {
         });
 
         saveBtn = new Button("save");
-        saveImgBtn = new Button("Save img");
-        saveImgBtn.addEventHandler(ActionEvent.ACTION, new EventHandler<ActionEvent>() {
-            @Override
-            public void handle(ActionEvent event) {
-                saveAsPng();
-            }
+        saveBtn.addEventHandler(ActionEvent.ACTION, event -> {
+            saveKeymap();
         });
+        saveImgBtn = new Button("Save img");
+        saveImgBtn.addEventHandler(ActionEvent.ACTION, event -> saveAsPng());
         sourceDirLabel = new Label("...");
         createKeymap = new Button("create");
+        createKeymap.addEventHandler(ActionEvent.ACTION, event -> {
+            newLayout();
+            primaryStage.setTitle("*new layout");
+            layout();
+        });
 
 //        macroCombo = new ComboBox<>();
 //        macroCombo.getItems().add("Smiley :-D");
@@ -345,13 +346,13 @@ public class Main extends Application {
 //        macroCombo.getItems().add("CTRL_SHIFT/#");
 
         layerCombo = new ComboBox<>();
-        layerCombo.getItems().add("Base");
+        layerCombo.getItems().add(BASELAYERNAME);
         layerCombo.getSelectionModel().select(0);
         layerCombo.addEventHandler(ActionEvent.ACTION, event -> {
             System.out.println("Selected!");
             if (layerCombo.getSelectionModel().getSelectedIndex() < 0) return;
             currentLayer = ergodoxLayout.getLayers().get(layerCombo.getSelectionModel().getSelectedItem());
-            Platform.runLater(() -> layout(canvas));
+            Platform.runLater(() -> layout());
         });
 
         deleteLayer = new Button("delete layer");
@@ -374,7 +375,7 @@ public class Main extends Application {
                 layerCombo.getItems().remove(currentLayer.getName());
                 layerCombo.getSelectionModel().select(0);
                 currentLayer = ergodoxLayout.getLayers().get(layerCombo.getItems().get(0));
-                Platform.runLater(() -> layout(canvas));
+                Platform.runLater(() -> layout());
             }
         });
         createLayer = new Button("add layer");
@@ -399,7 +400,7 @@ public class Main extends Application {
             currentLayer = l;
             layerCombo.getItems().add(l.getName());
             layerCombo.getSelectionModel().select(layerCombo.getItems().size() - 1);
-            Platform.runLater(() -> layout(canvas));
+            Platform.runLater(() -> layout());
         });
 
         renameLayer = new Button("rename layer");
@@ -410,7 +411,7 @@ public class Main extends Application {
                 currentLayer.setName(layerName);
                 layerCombo.getItems().add(layerName);
                 layerCombo.getSelectionModel().select(layerName);
-                Platform.runLater(() -> layout(canvas));
+                Platform.runLater(() -> layout());
             }
         });
 
@@ -436,21 +437,21 @@ public class Main extends Application {
         led1.setTextFill(Color.GRAY);
         led1.addEventHandler(MouseEvent.MOUSE_CLICKED, event -> {
             currentLayer.setLed1(!currentLayer.isLed1());
-            Platform.runLater(() -> layout(canvas));
+            Platform.runLater(() -> layout());
         });
 
         led2 = new Label("●");
         led2.setTextFill(Color.GRAY);
         led2.addEventHandler(MouseEvent.MOUSE_CLICKED, event -> {
             currentLayer.setLed2(!currentLayer.isLed2());
-            Platform.runLater(() -> layout(canvas));
+            Platform.runLater(() -> layout());
         });
 
         led3 = new Label("●");
         led3.setTextFill(Color.GRAY);
         led3.addEventHandler(MouseEvent.MOUSE_CLICKED, event -> {
             currentLayer.setLed3(!currentLayer.isLed3());
-            Platform.runLater(() -> layout(canvas));
+            Platform.runLater(() -> layout());
         });
 
 //        canvas.getChildren().add(macroCombo);
@@ -477,8 +478,8 @@ public class Main extends Application {
         canvas.getChildren().add(led2);
         canvas.getChildren().add(led3);
         canvas.getChildren().add(keyDescription);
-        Platform.runLater(() -> layout(canvas));
-//        layout(canvas);
+        Platform.runLater(() -> layout());
+//        layout();
 
         root.getChildren().add(canvas);
 //        Circle circle = new Circle(50,Color.BLUE);
@@ -487,8 +488,9 @@ public class Main extends Application {
 //        rectangle.relocate(70,70);
 //        canvas.getChildren().addAll(circle,rectangle);
 
-
-        Scene scene = new Scene(root, initialWindowWidth, initialWindowHeight);
+        updateWindowWidth(800);
+        updateWindowHeight(800);
+        Scene scene = new Scene(root, 800, 800);
 
         primaryStage.setTitle("ErgodoxLayoutGenerator");
         primaryStage.setScene(scene);
@@ -510,22 +512,28 @@ public class Main extends Application {
 
     }
 
+    public void newLayout() {
+        ergodoxLayout = new ErgodoxLayout();
+        currentLayer = new ErgodoxLayoutLayer(BASELAYERNAME); //base
+        ergodoxLayout.getLayers().put(currentLayer.getName(), currentLayer);
+    }
+
     public void updateWindowHeight(double newValue) {
         currentWindowHeight = newValue;
-        if (currentWindowHeight >= initialWindowHeight) {
-            scaleY = currentWindowHeight / (double) initialWindowHeight;
-            Platform.runLater(() -> layout(canvas));
+        if (currentWindowHeight >= basicCalculationHeight) {
+            scaleY = currentWindowHeight / (double) basicCalculationHeight;
+            Platform.runLater(() -> layout());
 
         }
     }
 
     public void updateWindowWidth(double newValue) {
         currentWindowWidth = newValue;
-        if (currentWindowWidth >= initialWindowWidth) {
-            scaleX = currentWindowWidth / (double) initialWindowWidth;
+        if (currentWindowWidth >= basicCalculationWith) {
+            scaleX = currentWindowWidth / (double) basicCalculationWith;
             rightHalfOffset = (int) (currentWindowWidth / 2);
 //                    System.out.println("Drawing with new scale of "+scaleX);
-            Platform.runLater(() -> layout(canvas));
+            Platform.runLater(() -> layout());
 
         }
     }
@@ -583,6 +591,42 @@ public class Main extends Application {
 
     }
 
+    public void saveKeymap() {
+        try {
+            DirectoryChooser fc = new DirectoryChooser();
+            if (qmkSourceDir == null) {
+                fc.setInitialDirectory(new File(System.getProperty("user.home")));
+            } else {
+                fc.setInitialDirectory(new File(qmkSourceDir.getPath() + "/keyboard/ergodox_ez/keymaps"));
+            }
+            fc.setTitle("Choose ergodox-keymap directory");
+
+            File selected = fc.showDialog(null);
+            if (selected == null) return;
+
+            if (qmkSourceDir.getAbsolutePath() != null && !selected.getAbsolutePath().startsWith(qmkSourceDir.getAbsolutePath())) {
+                Alert a = new Alert(Alert.AlertType.CONFIRMATION);
+                a.setTitle("Warning");
+                a.setContentText("Directory is not within the QMK-Source - you won't be able to compile it. Proceed?");
+                a.setHeaderText("Directory location");
+
+                Optional<ButtonType> result = a.showAndWait();
+                if (result.get() != ButtonType.OK) {
+                    return;
+                }
+            }
+
+            KeymapWriter writer = new KeymapWriter();
+            writer.writeKeymapFile(ergodoxLayout, selected);
+
+//            applicationSettings.setProperty(lastOpenedFile, selected.getAbsolutePath());
+//            saveConfig();
+
+        } catch (Exception e) {
+            //TODO: Implement Handling
+            throw new RuntimeException(e);
+        }
+    }
 
     public void saveAsPng() {
         FileChooser fc = new FileChooser();
@@ -595,9 +639,9 @@ public class Main extends Application {
 
 //        canvas.setPrefHeight(1080);
 //        canvas.setPrefWidth(1920);
-        updateWindowHeight(720);
-        updateWindowWidth(1280);
-        layout(canvas);
+        updateWindowHeight(1280);
+        updateWindowWidth(720);
+        layout();
         if (selectedGuiKey != null)
             selectedGuiKey.deselect();
         layerCombo.getSelectionModel().select(0);
@@ -614,7 +658,7 @@ public class Main extends Application {
         for (int i = 0; i < layerCombo.getItems().size(); i++) {
             layerCombo.getSelectionModel().select(i);
             currentLayer = ergodoxLayout.getLayers().get(layerCombo.getItems().get(i));
-            layout(canvas);
+            layout();
             image = canvas.snapshot(new SnapshotParameters(), null);
             img.getGraphics().drawImage(SwingFXUtils.fromFXImage(image, null), 0, i * snapshowHeight, null);
         }
@@ -632,7 +676,7 @@ public class Main extends Application {
 //            canvas.setPrefHeight(height);
 //            canvas.setPrefWidth(width);
 
-//            layout(canvas);
+//            layout();
         });
 
         createLayer.setVisible(true);
@@ -702,7 +746,7 @@ public class Main extends Application {
         currentLayer = ergodoxLayout.getLayers().get(layerCombo.getSelectionModel().getSelectedItem());
 
 
-        Platform.runLater(() -> layout(canvas));
+        Platform.runLater(() -> layout());
         primaryStage.setTitle(selected.getName());
         currentKeymap = selected.getName();
     }
@@ -727,7 +771,7 @@ public class Main extends Application {
     }
 
 
-    public void layout(Pane canvas) {
+    public void layout() {
 
 
         int row = 0;
