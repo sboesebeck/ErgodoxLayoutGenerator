@@ -56,10 +56,7 @@
 
 package de.caluga.ergodox.macrodialog;
 
-import de.caluga.ergodox.ComboBoxAutocompleter;
-import de.caluga.ergodox.ErgodoxKeyCode;
-import de.caluga.ergodox.ErgodoxLayout;
-import de.caluga.ergodox.KeymapParser;
+import de.caluga.ergodox.*;
 import de.caluga.ergodox.macros.*;
 import javafx.event.ActionEvent;
 import javafx.geometry.Insets;
@@ -90,7 +87,12 @@ public class MacroEditor {
     private ComboBox<String> layersCBX;
 
     public MacroEditor(ErgodoxLayout l) {
+        this(l, null);
+    }
+
+    public MacroEditor(ErgodoxLayout l, Macro m) {
         layout = l;
+        theMacro = m; //for Editing
     }
 
     public void showEditor() {
@@ -199,6 +201,49 @@ public class MacroEditor {
             macroEditor.close();
         });
 
+        if (theMacro != null) {
+            nameTF.setText(theMacro.getName());
+            StringBuilder b = new StringBuilder();
+            if (theMacro instanceof LongPressAndTypeMacro) {
+                longPMacroRB.setSelected(true);
+                showLongPressMacro(content);
+                LongPressAndTypeMacro lp = (LongPressAndTypeMacro) theMacro;
+                KeymapWriter.macroActionListToCString(b, lp.getLongPressKeys());
+                b.setLength(b.length() - 1);
+                macroContent1.setText(b.toString());
+                b.setLength(0);
+                KeymapWriter.macroActionListToCString(b, lp.getShortStrokes());
+                b.setLength(b.length() - 1);
+                macroContent2.setText(b.toString());
+                timeoutCBX.getSelectionModel().select(lp.getTimeout());
+            } else if (theMacro instanceof HoldKeyMacro) {
+                holdKeyMacroRB.setSelected(true);
+                showHoldKeyMacro(content);
+                HoldKeyMacro hm = (HoldKeyMacro) theMacro;
+                KeymapWriter.macroActionListToCString(b, hm.getOnPress());
+                b.setLength(b.length() - 1);
+                macroContent1.setText(b.toString());
+                b.setLength(0);
+                KeymapWriter.macroActionListToCString(b, hm.getOnRelease());
+                b.setLength(b.length() - 1);
+                macroContent2.setText(b.toString());
+            } else if (theMacro instanceof CustomMacro) {
+                customMacro.setSelected(true);
+                showCustomMacro(content);
+                macroContent1.setText(((CustomMacro) theMacro).getContent());
+            } else if (theMacro instanceof TypeMacro) {
+                typeMacroRB.setSelected(true);
+                showTypeMacro(content);
+                TypeMacro tm = (TypeMacro) theMacro;
+                KeymapWriter.macroActionListToCString(b, tm.getActions());
+                b.setLength(b.length() - 1);
+                macroContent1.setText(b.toString());
+            } else if (theMacro instanceof LayerToggleMacro) {
+                layerToggleRB.setSelected(true);
+                showLayerToggle(content);
+                layersCBX.getSelectionModel().select(((LayerToggleMacro) theMacro).getLayer());
+            }
+        }
         macroEditor.setTitle("MacroEditor");
         macroEditor.setScene(scene);
         macroEditor.showAndWait();
@@ -255,7 +300,7 @@ public class MacroEditor {
         timeoutCBX = createTimeoutCBX();
         content.add(timeoutCBX, 1, 1);
         content.add(new Label("typing part:"), 0, 3);
-        macroContent1 = new TextField("");
+        macroContent1 = new TextField();
         macroContent1.setPrefWidth(500);
         content.add(macroContent1, 1, 3);
         content.add(new Label("holding key part:"), 0, 2);

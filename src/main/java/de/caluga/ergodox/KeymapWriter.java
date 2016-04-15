@@ -78,6 +78,38 @@ import java.util.Map;
  */
 public class KeymapWriter {
 
+    public static void macroActionListToCString(StringBuilder b, List<MacroAction> actions) {
+        for (MacroAction a : actions) {
+            switch (a.getAction()) {
+                case DOWN:
+                    b.append("D");
+                    break;
+                case UP:
+                    b.append("U");
+                    break;
+                case WAIT:
+                    b.append("W");
+                    break;
+                case TYPE:
+                    b.append("T");
+                    break;
+                default:
+                    throw new RuntimeException("Unknown action!");
+            }
+            b.append("(");
+            if (a.getAction().equals(MacroAction.Action.WAIT))
+                b.append(a.getWait());
+            else {
+                if (!a.getCode().name().startsWith("KC_")) {
+                    System.err.println("Error: macro will not work, non-KC-Keycode! " + a.getCode().name());
+                }
+                b.append(a.getCode().name().substring(3));
+            }
+            b.append(")");
+            b.append(",");
+        }
+    }
+
     public void writeKeymapFile(ErgodoxLayout layout, File to) throws Exception {
         Configuration cfg = new Configuration(new Version(2, 3, 4));
         cfg.setClassForTemplateLoading(KeymapWriter.class, "/");
@@ -133,7 +165,8 @@ public class KeymapWriter {
                 b.append("END);\n");
                 b.append("\t\t}else{\n" +
                         "\t\t\treturn MACRO(");
-                getReleaseCString(b, hm.getOnPress());
+                macroActionListToCString(b, hm.getOnRelease());
+                getReleaseCString(b, hm.getOnPress()); //Make sure, all DOWNS are UPs TODO: check if double UPs cause problems!
                 b.append("END);\n\t\t}\n");
             } else if (layout.getMacros().get(macroName) instanceof LayerToggleMacro) {
                 LayerToggleMacro lt = (LayerToggleMacro) layout.getMacros().get(macroName);
@@ -158,38 +191,6 @@ public class KeymapWriter {
                 case DOWN:
                     b.append("U(").append(a.getCode().name().substring(3)).append("),");
             }
-        }
-    }
-
-    public void macroActionListToCString(StringBuilder b, List<MacroAction> actions) {
-        for (MacroAction a : actions) {
-            switch (a.getAction()) {
-                case DOWN:
-                    b.append("D");
-                    break;
-                case UP:
-                    b.append("U");
-                    break;
-                case WAIT:
-                    b.append("W");
-                    break;
-                case TYPE:
-                    b.append("T");
-                    break;
-                default:
-                    throw new RuntimeException("Unknown action!");
-            }
-            b.append("(");
-            if (a.getAction().equals(MacroAction.Action.WAIT))
-                b.append(a.getWait());
-            else {
-                if (!a.getCode().name().startsWith("KC_")) {
-                    System.err.println("Error: macro will not work, non-KC-Keycode! " + a.getCode().name());
-                }
-                b.append(a.getCode().name().substring(3));
-            }
-            b.append(")");
-            b.append(",");
         }
     }
 }

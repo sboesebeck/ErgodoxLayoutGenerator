@@ -59,6 +59,7 @@ package de.caluga.ergodox.macrodialog;/**
  */
 
 import de.caluga.ergodox.ErgodoxLayout;
+import de.caluga.ergodox.ErgodoxLayoutLayer;
 import de.caluga.ergodox.Key;
 import javafx.application.Platform;
 import javafx.event.ActionEvent;
@@ -125,7 +126,7 @@ public class MacroDialog {
         assignButton.setDisable(true);
         Button newMacro = new Button("New macro");
         newMacro.addEventHandler(ActionEvent.ACTION, event -> {
-            MacroEditor me = new MacroEditor();
+            MacroEditor me = new MacroEditor(ergodoxLayout);
             me.showEditor();
             if (me.getTheMacro() != null) {
                 ergodoxLayout.getMacros().put(me.getTheMacro().getName(), me.getTheMacro());
@@ -136,8 +137,38 @@ public class MacroDialog {
             }
         });
         Button delMacro = new Button("Del macro");
+        delMacro.addEventHandler(ActionEvent.ACTION, event -> {
+            //Checking for the macro in the layout
+            Alert confirmation = new Alert(Alert.AlertType.CONFIRMATION, "Really Delete this macro?", ButtonType.OK, ButtonType.CANCEL);
+            Optional<ButtonType> res = confirmation.showAndWait();
+            if (res.isPresent()) {
+                if (res.get().equals(ButtonType.CANCEL)) return;
+            }
+            String selectedItem = macroCBX.getSelectionModel().getSelectedItem();
+            for (ErgodoxLayoutLayer layer : ergodoxLayout.getLayers().values()) {
+                for (Key key : layer.getLayout()) {
+                    if (key.getValue().equals("M(" + selectedItem + ")")) {
+                        key.setValue("KC_TRNS");
+                    }
+                }
+            }
+            ergodoxLayout.getMacros().remove(selectedItem);
+            updateMacros();
+        });
         Button editMacro = new Button("Edit macro");
+        editMacro.addEventHandler(ActionEvent.ACTION, event -> {
+            MacroEditor me = new MacroEditor(ergodoxLayout, ergodoxLayout.getMacros().get(macroCBX.getSelectionModel().getSelectedItem()));
+            me.showEditor();
 
+            if (me.getTheMacro() != null) {
+                ergodoxLayout.getMacros().remove(macroCBX.getSelectionModel().getSelectedItem());
+                ergodoxLayout.getMacros().put(me.getTheMacro().getName(), me.getTheMacro());
+                updateMacros();
+                macroCBX.getSelectionModel().select(me.getTheMacro().getName());
+                assignButton.setDisable(false);
+                macroDescription.setText(me.getTheMacro().getDescription());
+            }
+        });
         FlowPane pn = new FlowPane();
         pn.setOrientation(Orientation.VERTICAL);
         pn.setVgap(10);
