@@ -51,10 +51,14 @@ or toggle a certain layer.
 
 
 
+
+
  ## Disclaimer
 
  This code is in a very early development stage, more like a prototype and proof of concept. The code is still in prototype
  level and not really "good". But it seems to work for now.
+
+ Also this Softare was not heavily tested on different machines, different OS. If you find an error, plese leave an issue on the github page.
 
  ## Copyright
  Copyright © 2007 Free Software Foundation, Inc. <http://fsf.org/>

@@ -58,11 +58,9 @@ package de.caluga.ergodox.macrodialog;
 
 import de.caluga.ergodox.ComboBoxAutocompleter;
 import de.caluga.ergodox.ErgodoxKeyCode;
+import de.caluga.ergodox.ErgodoxLayout;
 import de.caluga.ergodox.KeymapParser;
-import de.caluga.ergodox.macros.CustomMacro;
-import de.caluga.ergodox.macros.LongPressAndTypeMacro;
-import de.caluga.ergodox.macros.Macro;
-import de.caluga.ergodox.macros.TypeMacro;
+import de.caluga.ergodox.macros.*;
 import javafx.event.ActionEvent;
 import javafx.geometry.Insets;
 import javafx.scene.Scene;
@@ -88,6 +86,12 @@ public class MacroEditor {
     private TextField focusedTF;
     private TextArea textArea;
 
+    private ErgodoxLayout layout;
+    private ComboBox<String> layersCBX;
+
+    public MacroEditor(ErgodoxLayout l) {
+        layout = l;
+    }
 
     public void showEditor() {
         Stage macroEditor = new Stage();
@@ -105,6 +109,8 @@ public class MacroEditor {
         longPMacroRB.setToggleGroup(tg);
         RadioButton holdKeyMacroRB = new RadioButton("Hold key macro");
         holdKeyMacroRB.setToggleGroup(tg);
+        RadioButton layerToggleRB = new RadioButton("layertoggle macro");
+        layerToggleRB.setToggleGroup(tg);
         RadioButton customMacro = new RadioButton("Custom macro");
         customMacro.setToggleGroup(tg);
         GridPane content = new GridPane();
@@ -116,6 +122,7 @@ public class MacroEditor {
         p.getChildren().add(longPMacroRB);
         p.getChildren().add(holdKeyMacroRB);
         p.getChildren().add(customMacro);
+        p.getChildren().add(layerToggleRB);
 
         typeMacroRB.setSelected(true);
         showTypeMacro(content);
@@ -137,6 +144,12 @@ public class MacroEditor {
         customMacro.addEventHandler(ActionEvent.ACTION, event -> {
             showCustomMacro(content);
         });
+
+        layerToggleRB.addEventHandler(ActionEvent.ACTION, event -> {
+            showLayerToggle(content);
+        });
+
+
 
         nameTF = new TextField();
         grid.add(new Label("Macro name:"), 0, 0);
@@ -172,10 +185,12 @@ public class MacroEditor {
             Macro m = null;
             if (typeMacroRB.isSelected()) {
                 m = getTypeMacro();
-
             } else if (longPMacroRB.isSelected()) {
                 m = getLongPressMacro();
-
+            } else if (layerToggleRB.isSelected()) {
+                m = getLayerToggleMacro();
+            } else if (holdKeyMacroRB.isSelected()) {
+                m = getHoldKeyMacro();
             } else if (customMacro.isSelected()) {
                 m = getCustomMacro();
             }
@@ -207,6 +222,30 @@ public class MacroEditor {
 
     private void showHoldKeyMacro(GridPane content) {
         content.getChildren().clear();
+        content.add(new Label("Hold key makro"), 0, 0);
+        macroContent1 = new TextField("");
+        macroContent2 = new TextField("");
+        content.add(new Label("on press"), 0, 1);
+        content.add(new Label("on release"), 0, 2);
+        content.add(macroContent1, 1, 1);
+        content.add(macroContent2, 1, 2);
+        Button btn = new Button("convert text to macro");
+        btn.addEventHandler(ActionEvent.ACTION, event -> {
+            macroContent1.setText(macronifyString(macroContent1.getText()));
+        });
+        content.add(btn, 2, 1);
+        btn = new Button("convert text to macro");
+        btn.addEventHandler(ActionEvent.ACTION, event -> {
+            macroContent2.setText(macronifyString(macroContent2.getText()));
+        });
+        content.add(btn, 2, 2);
+    }
+
+    private Macro getHoldKeyMacro() {
+        HoldKeyMacro hm = new HoldKeyMacro();
+        hm.setName(nameTF.getText());
+        hm.setOnPress(KeymapParser.parseActionList(macroContent1.getText()));
+        return hm;
     }
 
     private void showLongPressMacro(GridPane content) {
@@ -292,6 +331,24 @@ public class MacroEditor {
         content.add(new Label("Long press macro will issue different keys, depending on how long the key is pressed\nAttention: you need to 'undo' your held keys in the type phase.\nthis means, if you want to do SHIFT when held, type S if not, your config will look like this:\nholding key: D(LSFT)\ntyping part: U(LSFT),T(S)"), 0, 4, 3, 1);
 
 
+    }
+
+    private void showLayerToggle(GridPane content) {
+        content.getChildren().clear();
+        content.add(new Label("layer toggle macro:"), 0, 0, 2, 1);
+        layersCBX = new ComboBox<>();
+        for (String k : layout.getLayers().keySet()) {
+            layersCBX.getItems().add(k);
+        }
+        content.add(new Label("layer:"), 0, 1);
+        content.add(layersCBX, 1, 1);
+    }
+
+    private LayerToggleMacro getLayerToggleMacro() {
+        LayerToggleMacro lt = new LayerToggleMacro();
+        lt.setLayer(layersCBX.getSelectionModel().getSelectedItem());
+        lt.setName(nameTF.getText());
+        return lt;
     }
 
     private void showTypeMacro(GridPane content) {
