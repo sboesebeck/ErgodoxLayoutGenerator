@@ -50,6 +50,7 @@ or toggle a certain layer.
  and would be stored in the keymap directory (as documentation).
 
 
+documentation is also available at <https://boesebeck.name/2016/04/16/ergodoxlayoutgenerator-documentation/>
 
 
 
