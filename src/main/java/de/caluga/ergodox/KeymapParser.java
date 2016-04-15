@@ -258,7 +258,7 @@ public class KeymapParser {
 //                hkm.setOnRelease(parseActionList(mHoldKeyMacro.group(2)));
                 macro = hkm;
             } else if (mLTTypeMacro.matches()) {
-                System.out.println("Got LTType Macro; onPress: " + mLTTypeMacro.group(1) + "  timeout: " + mLTTypeMacro.group(2) + "  release: " + mLTTypeMacro.group(3) + "  type: " + mLTTypeMacro.group(4));
+                System.out.println("Got longPress Macro; onPress: " + mLTTypeMacro.group(1) + "  timeout: " + mLTTypeMacro.group(2) + "  release: " + mLTTypeMacro.group(3) + "  type: " + mLTTypeMacro.group(4));
                 LongPressAndTypeMacro lt = new LongPressAndTypeMacro();
                 List<MacroAction> lst = parseActionList(mLTTypeMacro.group(1));
                 lt.setLongPressKeys(lst);

@@ -618,7 +618,7 @@ public class Main extends Application {
             }
 
             KeymapWriter writer = new KeymapWriter();
-            writer.writeKeymapFile(ergodoxLayout, new File(qmkSourceDir.getPath())); //TODO: select file
+            writer.writeKeymapFile(ergodoxLayout, new File(selected.getAbsolutePath() + "/keymap.c"));
 
 //            applicationSettings.setProperty(lastOpenedFile, selected.getAbsolutePath());
 //            saveConfig();

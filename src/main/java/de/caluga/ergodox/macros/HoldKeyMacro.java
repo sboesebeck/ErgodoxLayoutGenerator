@@ -112,7 +112,7 @@ public class HoldKeyMacro extends Macro {
         b.append("Holiding down a combination of keys\n");
         b.append("OnKeyPress:");
         b.append(getMacroActionListString(getOnPress()));
-        b.append("\n");
+//        b.append("\n");
 //        b.append("OnRelease:");
 //        b.append(getMacroActionListString(getOnRelease()));
         return b.toString();

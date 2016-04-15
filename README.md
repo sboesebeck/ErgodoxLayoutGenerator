@@ -49,6 +49,8 @@ or toggle a certain layer.
  By default it is called "KEYMAPNAME_highres.png" (where KEYMAPNAME is replaced by the name of your keymap)
  and would be stored in the keymap directory (as documentation).
 
+
+
  ## Disclaimer
 
  This code is in a very early development stage, more like a prototype and proof of concept. The code is still in prototype

@@ -63,7 +63,7 @@ import freemarker.template.TemplateExceptionHandler;
 import freemarker.template.Version;
 
 import java.io.File;
-import java.io.OutputStreamWriter;
+import java.io.FileWriter;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -115,13 +115,13 @@ public class KeymapWriter {
                 macroActionListToCString(b, lp.getLongPressKeys());
                 b.append("END);\n");
                 b.append("\t\t} else {\n");
-                b.append("\t\t\tif (timer_elapsed(start) >").append(lp.getTimeout()).append("{\n");
+                b.append("\t\t\tif (timer_elapsed(start) >").append(lp.getTimeout()).append(") {\n");
                 b.append("\t\t\t\treturn MACRO(");
-                macroActionListToCString(b, lp.getShortStrokes());
+                getReleaseCString(b, lp.getLongPressKeys());
                 b.append("END);\n");
                 b.append("\t\t\t} else {\n");
                 b.append("\t\t\t\treturn MACRO(");
-                getReleaseCString(b, lp.getLongPressKeys());
+                macroActionListToCString(b, lp.getShortStrokes());
                 b.append("END);\n");
                 b.append("\t\t\t}\n" +
                         "\t\t}\n");
@@ -149,14 +149,14 @@ public class KeymapWriter {
         }
         model.put("macros", macroContentByName);
 
-        template.process(model, new OutputStreamWriter(System.out));
+        template.process(model, new FileWriter(to));
     }
 
     public void getReleaseCString(StringBuilder b, List<MacroAction> lst) {
         for (MacroAction a : lst) {
             switch (a.getAction()) {
                 case DOWN:
-                    b.append("U(").append(a.getCode().name()).append("),");
+                    b.append("U(").append(a.getCode().name().substring(3)).append("),");
             }
         }
     }
