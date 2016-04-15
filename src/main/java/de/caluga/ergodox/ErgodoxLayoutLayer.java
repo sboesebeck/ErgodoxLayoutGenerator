@@ -239,6 +239,10 @@ public class ErgodoxLayoutLayer {
         rowLength.add(3);
     }
 
+    public boolean hasLED() {
+        return led1 || led2 || led3;
+    }
+
     public boolean isLed1() {
         return led1;
     }
@@ -288,6 +292,10 @@ public class ErgodoxLayoutLayer {
 
     public List<Integer> getRowLength() {
         return rowLength;
+    }
+
+    public String toString() {
+        return "Layer name: " + getName() + " rows: " + rowLength.size() + " keys: " + layout.size();
     }
 }
 

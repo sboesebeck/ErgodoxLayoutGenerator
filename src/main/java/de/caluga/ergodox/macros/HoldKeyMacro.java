@@ -70,7 +70,7 @@ public class HoldKeyMacro extends Macro {
     public final static Pattern pattern = Pattern.compile("if\\(record->event.pressed\\)\\{returnMACRO\\(([^;]+),END\\);\\}else\\{returnMACRO\\(([^;]+),END\\);\\}");
 
     private List<MacroAction> onPress;
-    private List<MacroAction> onRelease;
+//    private List<MacroAction> onRelease;
 
     public HoldKeyMacro() {
 
@@ -84,13 +84,13 @@ public class HoldKeyMacro extends Macro {
         this.onPress = onPress;
     }
 
-    public List<MacroAction> getOnRelease() {
-        return onRelease;
-    }
-
-    public void setOnRelease(List<MacroAction> onRelease) {
-        this.onRelease = onRelease;
-    }
+//    public List<MacroAction> getOnRelease() {
+//        return onRelease;
+//    }
+//
+//    public void setOnRelease(List<MacroAction> onRelease) {
+//        this.onRelease = onRelease;
+//    }
 
     @Override
     public String getMacroGuiText() {
@@ -113,8 +113,8 @@ public class HoldKeyMacro extends Macro {
         b.append("OnKeyPress:");
         b.append(getMacroActionListString(getOnPress()));
         b.append("\n");
-        b.append("OnRelease:");
-        b.append(getMacroActionListString(getOnRelease()));
+//        b.append("OnRelease:");
+//        b.append(getMacroActionListString(getOnRelease()));
         return b.toString();
     }
 

@@ -60,7 +60,10 @@ import de.caluga.ergodox.macros.*;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.regex.Matcher;
 
 
@@ -150,7 +153,7 @@ public class KeymapParser {
         idx = fileContent.indexOf(keymapStart) + keymapStart.length();
         State state = State.START;
         int brCount = 0;
-        Map<String, String> layerDefByName = new HashMap<>();
+        Map<String, String> layerDefByName = new LinkedHashMap<>();
         String layerName = "";
         //parse layer definitions
         while (idx < fileContent.length()) {
@@ -221,7 +224,7 @@ public class KeymapParser {
         idx = getTextBetweenBraces(idx, brCount);
         String macros = fileContent.substring(start, idx);
 
-        Map<String, Macro> keymapMacros = new HashMap();
+        Map<String, Macro> keymapMacros = new LinkedHashMap();
 
         while (macros.length() > 0) {
             idx = macros.indexOf("case ");
@@ -252,7 +255,7 @@ public class KeymapParser {
                 System.out.println("OnKeyPress: " + mHoldKeyMacro.group(1) + "  onRelease: " + mHoldKeyMacro.group(2));
                 HoldKeyMacro hkm = new HoldKeyMacro();
                 hkm.setOnPress(parseActionList(mHoldKeyMacro.group(1)));
-                hkm.setOnRelease(parseActionList(mHoldKeyMacro.group(2)));
+//                hkm.setOnRelease(parseActionList(mHoldKeyMacro.group(2)));
                 macro = hkm;
             } else if (mLTTypeMacro.matches()) {
                 System.out.println("Got LTType Macro; onPress: " + mLTTypeMacro.group(1) + "  timeout: " + mLTTypeMacro.group(2) + "  release: " + mLTTypeMacro.group(3) + "  type: " + mLTTypeMacro.group(4));

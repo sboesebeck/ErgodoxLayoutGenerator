@@ -56,6 +56,7 @@
 
 package de.caluga.ergodox;
 
+import de.caluga.ergodox.macros.*;
 import freemarker.template.Configuration;
 import freemarker.template.Template;
 import freemarker.template.TemplateExceptionHandler;
@@ -64,6 +65,7 @@ import freemarker.template.Version;
 import java.io.File;
 import java.io.OutputStreamWriter;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
@@ -88,6 +90,106 @@ public class KeymapWriter {
         Map<String, Object> model = new HashMap<>();
         model.put("layout", layout);
         model.put("name", to.getName());
+        model.put("version", Main.VERSION);
+
+
+        Map<String, String> macroContentByName = new HashMap<>();
+
+        for (String macroName : layout.getMacros().keySet()) {
+            StringBuilder b = new StringBuilder();
+            b.append("//Macro: " + macroName);
+            b.append("//-----------------------\n");
+            if (layout.getMacros().get(macroName) instanceof TypeMacro) {
+                TypeMacro tm = (TypeMacro) layout.getMacros().get(macroName);
+                b.append("if (record->event.pressed) {\n" +
+                        "\t\t\treturn MACRO(");
+                macroActionListToCString(b, tm.getActions());
+                b.append("END);\n");
+                b.append("\t\t}\n");
+            } else if (layout.getMacros().get(macroName) instanceof LongPressAndTypeMacro) {
+                LongPressAndTypeMacro lp = (LongPressAndTypeMacro) layout.getMacros().get(macroName);
+                b.append("if (record->event.pressed) {\n" +
+                        "\t\t\tstart = timer_read();\n" +
+                        "\t\t\treturn ");
+                b.append("MACRO(");
+                macroActionListToCString(b, lp.getLongPressKeys());
+                b.append("END);\n");
+                b.append("\t\t} else {\n");
+                b.append("\t\t\tif (timer_elapsed(start) >").append(lp.getTimeout()).append("{\n");
+                b.append("\t\t\t\treturn MACRO(");
+                macroActionListToCString(b, lp.getShortStrokes());
+                b.append("END);\n");
+                b.append("\t\t\t} else {\n");
+                b.append("\t\t\t\treturn MACRO(");
+                getReleaseCString(b, lp.getLongPressKeys());
+                b.append("END);\n");
+                b.append("\t\t\t}\n" +
+                        "\t\t}\n");
+            } else if (layout.getMacros().get(macroName) instanceof HoldKeyMacro) {
+                HoldKeyMacro hm = (HoldKeyMacro) layout.getMacros().get(macroName);
+                b.append("if (record->event.pressed){\n" +
+                        "\t\t\treturn MACRO(");
+                macroActionListToCString(b, hm.getOnPress());
+                b.append("END);\n");
+                b.append("\t\t}else{\n" +
+                        "\t\t\treturn MACRO(");
+                getReleaseCString(b, hm.getOnPress());
+                b.append("END);\n\t\t}\n");
+            } else if (layout.getMacros().get(macroName) instanceof LayerToggleMacro) {
+                LayerToggleMacro lt = (LayerToggleMacro) layout.getMacros().get(macroName);
+                b.append(" if (record->event.pressed){\n" +
+                        "           layer_state ^= (1<<").append(lt.getLayer()).append(");\n" +
+                        "           layer_state &= (1<<").append(lt.getLayer()).append(");\n" +
+                        "        }\n");
+            } else if (layout.getMacros().get(macroName) instanceof CustomMacro) {
+                CustomMacro cm = (CustomMacro) layout.getMacros().get(macroName);
+                b.append(cm.getContent());
+            }
+            macroContentByName.put(macroName, b.toString());
+        }
+        model.put("macros", macroContentByName);
+
         template.process(model, new OutputStreamWriter(System.out));
+    }
+
+    public void getReleaseCString(StringBuilder b, List<MacroAction> lst) {
+        for (MacroAction a : lst) {
+            switch (a.getAction()) {
+                case DOWN:
+                    b.append("U(").append(a.getCode().name()).append("),");
+            }
+        }
+    }
+
+    public void macroActionListToCString(StringBuilder b, List<MacroAction> actions) {
+        for (MacroAction a : actions) {
+            switch (a.getAction()) {
+                case DOWN:
+                    b.append("D");
+                    break;
+                case UP:
+                    b.append("U");
+                    break;
+                case WAIT:
+                    b.append("W");
+                    break;
+                case TYPE:
+                    b.append("T");
+                    break;
+                default:
+                    throw new RuntimeException("Unknown action!");
+            }
+            b.append("(");
+            if (a.getAction().equals(MacroAction.Action.WAIT))
+                b.append(a.getWait());
+            else {
+                if (!a.getCode().name().startsWith("KC_")) {
+                    System.err.println("Error: macro will not work, non-KC-Keycode! " + a.getCode().name());
+                }
+                b.append(a.getCode().name().substring(3));
+            }
+            b.append(")");
+            b.append(",");
+        }
     }
 }

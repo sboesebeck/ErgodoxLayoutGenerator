@@ -97,6 +97,7 @@ import java.util.*;
  **/
 public class Main extends Application {
     public static final String BASELAYERNAME = "Base";
+    public static final String VERSION = "ErgodoxLayoutGenerator V1.0BETA1";
     private static final File configFile = new File(System.getProperty("user.home") + "/.ergodoxgenerator.conf");
     public static Properties applicationSettings;
     public final int pixelWidth = 40;
@@ -617,7 +618,7 @@ public class Main extends Application {
             }
 
             KeymapWriter writer = new KeymapWriter();
-            writer.writeKeymapFile(ergodoxLayout, selected);
+            writer.writeKeymapFile(ergodoxLayout, new File(qmkSourceDir.getPath())); //TODO: select file
 
 //            applicationSettings.setProperty(lastOpenedFile, selected.getAbsolutePath());
 //            saveConfig();
@@ -740,7 +741,7 @@ public class Main extends Application {
         ergodoxLayout = parser.parse(selected.getAbsolutePath() + "/keymap.c");
         layerCombo.getItems().clear();
         for (String k : ergodoxLayout.getLayers().keySet()) {
-            layerCombo.getItems().add(0, k);
+            layerCombo.getItems().add(k);
         }
         layerCombo.getSelectionModel().select(0);
         currentLayer = ergodoxLayout.getLayers().get(layerCombo.getSelectionModel().getSelectedItem());

@@ -60,7 +60,7 @@ package de.caluga.ergodox;/**
 
 import de.caluga.ergodox.macros.Macro;
 
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
@@ -72,7 +72,7 @@ public class ErgodoxLayout {
     private Map<String, Macro> macros;
 
     public Map<String, ErgodoxLayoutLayer> getLayers() {
-        if (layers == null) layers = new HashMap<>();
+        if (layers == null) layers = new LinkedHashMap<>();
         return layers;
     }
 
@@ -81,7 +81,7 @@ public class ErgodoxLayout {
     }
 
     public Map<String, Macro> getMacros() {
-        if (macros == null) macros = new HashMap<>();
+        if (macros == null) macros = new LinkedHashMap<>();
         return macros;
     }
 
