@@ -85,10 +85,7 @@ import javafx.stage.Stage;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileWriter;
-import java.io.IOException;
+import java.io.*;
 import java.util.*;
 
 
@@ -183,8 +180,7 @@ public class Main extends Application {
         try {
             applicationSettings.store(new FileWriter(configFile), "Ergodox Layout Generator");
         } catch (Exception e) {
-            //TODO: Implement Handling
-            throw new RuntimeException(e);
+            //ignore
         }
     }
 
@@ -284,7 +280,12 @@ public class Main extends Application {
             gk.getInner().addEventHandler(MouseEvent.MOUSE_CLICKED, event -> {
                 event.consume();
                 if (!event.getButton().equals(MouseButton.PRIMARY)) return;
-
+                if (event.getClickCount() > 1) {
+//                    gk.getInner().getContextMenu().show(gk.getInner(), Side.TOP,10,10);return;
+                    doAssignKey(currentLayer.getLayout().get(i));
+                    Platform.runLater(() -> layout());
+                    return;
+                }
                 Key k1 = currentLayer.getLayout().get(i);
                 System.out.println("Key at " + i + " " + k1.getWidth() + "x" + k1.getHeight() + " value: " + k1.getValue());
                 if (selectedGuiKey != null) {
@@ -513,13 +514,13 @@ public class Main extends Application {
 
     }
 
-    public void newLayout() {
+    private void newLayout() {
         ergodoxLayout = new ErgodoxLayout();
         currentLayer = new ErgodoxLayoutLayer(BASELAYERNAME); //base
         ergodoxLayout.getLayers().put(currentLayer.getName(), currentLayer);
     }
 
-    public void updateWindowHeight(double newValue) {
+    private void updateWindowHeight(double newValue) {
         currentWindowHeight = newValue;
         if (currentWindowHeight >= basicCalculationHeight) {
             scaleY = currentWindowHeight / (double) basicCalculationHeight;
@@ -528,7 +529,7 @@ public class Main extends Application {
         }
     }
 
-    public void updateWindowWidth(double newValue) {
+    private void updateWindowWidth(double newValue) {
         currentWindowWidth = newValue;
         if (currentWindowWidth >= basicCalculationWith) {
             scaleX = currentWindowWidth / (double) basicCalculationWith;
@@ -620,70 +621,106 @@ public class Main extends Application {
             KeymapWriter writer = new KeymapWriter();
             writer.writeKeymapFile(ergodoxLayout, new File(selected.getAbsolutePath() + "/keymap.c"));
 
-//            applicationSettings.setProperty(lastOpenedFile, selected.getAbsolutePath());
-//            saveConfig();
+            applicationSettings.setProperty(lastOpenedFile, selected.getAbsolutePath());
+            saveConfig();
 
         } catch (Exception e) {
-            //TODO: Implement Handling
-            throw new RuntimeException(e);
+            showErrorMessage("Could not write keymap", e);
         }
     }
 
-    public void saveAsPng() {
-        FileChooser fc = new FileChooser();
-        fc.setInitialDirectory(new File(qmkSourceDir.getPath() + "/keyboard/ergodox_ez/keymaps/" + currentKeymap));
-        fc.setInitialFileName(currentKeymap + "_highres.png");
-        File file = fc.showSaveDialog(null);
-        if (file == null) return;
-        double width = canvas.getWidth();
-        double height = canvas.getHeight();
+
+    private void showErrorMessage(String msg, Exception ex) {
+        Alert alert = new Alert(Alert.AlertType.ERROR);
+        alert.setTitle("Error during execution");
+        alert.setHeaderText("There was an error");
+        alert.setContentText(msg);
+
+
+// Create expandable Exception.
+        StringWriter sw = new StringWriter();
+        PrintWriter pw = new PrintWriter(sw);
+        ex.printStackTrace(pw);
+        String exceptionText = sw.toString();
+
+        Label label = new Label("The exception stacktrace was:");
+
+        TextArea textArea = new TextArea(exceptionText);
+        textArea.setEditable(false);
+        textArea.setWrapText(true);
+
+        textArea.setMaxWidth(Double.MAX_VALUE);
+        textArea.setMaxHeight(Double.MAX_VALUE);
+        GridPane.setVgrow(textArea, Priority.ALWAYS);
+        GridPane.setHgrow(textArea, Priority.ALWAYS);
+
+        GridPane expContent = new GridPane();
+        expContent.setMaxWidth(Double.MAX_VALUE);
+        expContent.add(label, 0, 0);
+        expContent.add(textArea, 0, 1);
+
+// Set expandable Exception into the dialog pane.
+        alert.getDialogPane().setExpandableContent(expContent);
+
+        alert.showAndWait();
+    }
+
+    private void saveAsPng() {
+        try {
+            FileChooser fc = new FileChooser();
+            fc.setInitialDirectory(new File(qmkSourceDir.getPath() + "/keyboard/ergodox_ez/keymaps/" + currentKeymap));
+            fc.setInitialFileName(currentKeymap + "_highres.png");
+            File file = fc.showSaveDialog(null);
+            if (file == null) return;
+            double width = canvas.getWidth();
+            double height = canvas.getHeight();
 
 //        canvas.setPrefHeight(1080);
 //        canvas.setPrefWidth(1920);
-        updateWindowHeight(1280);
-        updateWindowWidth(720);
-        layout();
-        if (selectedGuiKey != null)
-            selectedGuiKey.deselect();
-        layerCombo.getSelectionModel().select(0);
-        WritableImage image = canvas.snapshot(new SnapshotParameters(), null);
-
-        int snapshowHeight = (int) (image.getHeight() - 65);
-        BufferedImage img = new BufferedImage((int) image.getWidth(), snapshowHeight * layerCombo.getItems().size(), BufferedImage.TYPE_INT_RGB);
-        createLayer.setVisible(false);
-        deleteLayer.setVisible(false);
-        keyDescription.setVisible(false);
-        renameLayer.setVisible(false);
-
-
-        for (int i = 0; i < layerCombo.getItems().size(); i++) {
-            layerCombo.getSelectionModel().select(i);
-            currentLayer = ergodoxLayout.getLayers().get(layerCombo.getItems().get(i));
+            updateWindowHeight(1280);
+            updateWindowWidth(720);
             layout();
-            image = canvas.snapshot(new SnapshotParameters(), null);
-            img.getGraphics().drawImage(SwingFXUtils.fromFXImage(image, null), 0, i * snapshowHeight, null);
-        }
-
-
-        try {
-            ImageIO.write(img, "png", file);
-        } catch (IOException e) {
-            // TODO: handle exception here
-        }
-        Platform.runLater(() -> {
+            if (selectedGuiKey != null)
+                selectedGuiKey.deselect();
             layerCombo.getSelectionModel().select(0);
-            updateWindowHeight(height);
-            updateWindowWidth(width);
-//            canvas.setPrefHeight(height);
-//            canvas.setPrefWidth(width);
+            WritableImage image = canvas.snapshot(new SnapshotParameters(), null);
 
-//            layout();
-        });
+            int snapshowHeight = (int) (image.getHeight() - 65);
+            BufferedImage img = new BufferedImage((int) image.getWidth(), snapshowHeight * layerCombo.getItems().size(), BufferedImage.TYPE_INT_RGB);
+            createLayer.setVisible(false);
+            deleteLayer.setVisible(false);
+            keyDescription.setVisible(false);
+            renameLayer.setVisible(false);
 
-        createLayer.setVisible(true);
-        deleteLayer.setVisible(true);
-        keyDescription.setVisible(true);
-        renameLayer.setVisible(true);
+
+            for (int i = 0; i < layerCombo.getItems().size(); i++) {
+                layerCombo.getSelectionModel().select(i);
+                currentLayer = ergodoxLayout.getLayers().get(layerCombo.getItems().get(i));
+                layout();
+                image = canvas.snapshot(new SnapshotParameters(), null);
+                img.getGraphics().drawImage(SwingFXUtils.fromFXImage(image, null), 0, i * snapshowHeight, null);
+            }
+
+
+            ImageIO.write(img, "png", file);
+            Platform.runLater(() -> {
+                layerCombo.getSelectionModel().select(0);
+                updateWindowHeight(height);
+                updateWindowWidth(width);
+                //            canvas.setPrefHeight(height);
+                //            canvas.setPrefWidth(width);
+
+                //            layout();
+            });
+        } catch (Exception e) {
+            showErrorMessage("Could not write png", e);
+        } finally {
+
+            createLayer.setVisible(true);
+            deleteLayer.setVisible(true);
+            keyDescription.setVisible(true);
+            renameLayer.setVisible(true);
+        }
     }
 
     private void readConfig() {
@@ -737,19 +774,23 @@ public class Main extends Application {
     }
 
     private void readKeymapFile(Stage primaryStage, File selected) throws Exception {
-        KeymapParser parser = new KeymapParser();
-        ergodoxLayout = parser.parse(selected.getAbsolutePath() + "/keymap.c");
-        layerCombo.getItems().clear();
-        for (String k : ergodoxLayout.getLayers().keySet()) {
-            layerCombo.getItems().add(k);
+        try {
+            KeymapParser parser = new KeymapParser();
+            ergodoxLayout = parser.parse(selected.getAbsolutePath() + "/keymap.c");
+            layerCombo.getItems().clear();
+            for (String k : ergodoxLayout.getLayers().keySet()) {
+                layerCombo.getItems().add(k);
+            }
+            layerCombo.getSelectionModel().select(0);
+            currentLayer = ergodoxLayout.getLayers().get(layerCombo.getSelectionModel().getSelectedItem());
+
+
+            Platform.runLater(() -> layout());
+            primaryStage.setTitle(selected.getName());
+            currentKeymap = selected.getName();
+        } catch (Exception e) {
+            showErrorMessage("Could not parse keymap file", e);
         }
-        layerCombo.getSelectionModel().select(0);
-        currentLayer = ergodoxLayout.getLayers().get(layerCombo.getSelectionModel().getSelectedItem());
-
-
-        Platform.runLater(() -> layout());
-        primaryStage.setTitle(selected.getName());
-        currentKeymap = selected.getName();
     }
 
     private void openDialog(Stage primaryStage) {
@@ -773,7 +814,6 @@ public class Main extends Application {
 
 
     public void layout() {
-
 
         int row = 0;
         int x = (int) (offsetX * scaleX);
@@ -1024,12 +1064,16 @@ public class Main extends Application {
         } else if (!kval.contains("_") || kval.contains("(")) {
             ret = kval;
         } else {
-            ErgodoxKeyCode k = ErgodoxKeyCode.valueOf(kval);
-            if (k == null) {
-                //error
+            try {
+                ErgodoxKeyCode k = ErgodoxKeyCode.valueOf(kval.trim());
+                if (k == null) {
+                    //error
+                    ret = "invalid";
+                } else {
+                    ret = getKeyDisplayName(kval.substring(kval.lastIndexOf('_') + 1));
+                }
+            } catch (IllegalArgumentException e) {
                 ret = "invalid";
-            } else {
-                ret = getKeyDisplayName(kval.substring(kval.lastIndexOf('_') + 1));
             }
         }
 
