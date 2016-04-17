@@ -668,7 +668,14 @@ public class Main extends Application {
     private void saveAsPng() {
         try {
             FileChooser fc = new FileChooser();
-            fc.setInitialDirectory(new File(qmkSourceDir.getPath() + "/keyboard/ergodox_ez/keymaps/" + currentKeymap));
+            File startFile = new File(qmkSourceDir.getPath() + "/keyboard/ergodox_ez/keymaps/" + currentKeymap);
+            if (!startFile.exists()) {
+                startFile = new File(currentKeymap);
+            }
+            if (!startFile.exists()) {
+                startFile = new File(qmkSourceDir.getPath() + "/keyboard/ergodox_ez/keymaps");
+            }
+            fc.setInitialDirectory(startFile);
             fc.setInitialFileName(currentKeymap + "_highres.png");
             File file = fc.showSaveDialog(null);
             if (file == null) return;
