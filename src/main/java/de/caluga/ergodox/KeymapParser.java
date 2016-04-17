@@ -103,6 +103,9 @@ public class KeymapParser {
         } else if (token.startsWith("T(")) {
             a.setAction(MacroAction.Action.TYPE);
             a.setCode(ErgodoxKeyCode.valueOf("KC_" + token.substring(2, token.length() - 1)));
+        } else if (token.startsWith("I(")) {
+            a.setAction(MacroAction.Action.INTERVAL);
+            a.setWait(Integer.parseInt(token.substring(2, token.length() - 1)));
         } else if (token.startsWith("W(")) {
             a.setAction(MacroAction.Action.WAIT);
             a.setWait(Integer.parseInt(token.substring(2, token.length() - 1)));

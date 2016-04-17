@@ -93,10 +93,20 @@ public class TypeMacro extends Macro {
         for (MacroAction a : getActions()) {
             b.append(a.getAction().name());
             b.append(":   ");
-            b.append("keycode: ");
-            b.append(a.getCode().name().substring(a.getCode().name().lastIndexOf("_") + 1));
-            b.append("    wait: ");
-            b.append(a.getWait());
+            switch (a.getAction()) {
+                case TYPE:
+                case DOWN:
+                case UP:
+                    b.append("keycode: ");
+                    b.append(a.getCode().name().substring(a.getCode().name().lastIndexOf("_") + 1));
+                    break;
+                case WAIT:
+                case INTERVAL:
+                    b.append(a.getWait());
+
+                    break;
+
+            }
         }
         return b.toString();
     }

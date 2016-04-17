@@ -111,6 +111,11 @@ public class MacroAction {
                 b.append(getWait());
                 b.append("ms");
                 break;
+            case INTERVAL:
+                b.append("Interval ");
+                b.append(getWait());
+                b.append("ms");
+                break;
             case TYPE:
                 b.append(Macro.simpifyKeyCode(getCode()));
                 break;
@@ -120,6 +125,6 @@ public class MacroAction {
     }
 
     public enum Action {
-        UP, DOWN, WAIT, TYPE,
+        UP, DOWN, WAIT, TYPE, INTERVAL,
     }
 }
