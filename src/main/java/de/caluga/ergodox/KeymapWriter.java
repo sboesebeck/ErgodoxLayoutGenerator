@@ -176,9 +176,9 @@ public class KeymapWriter {
                 b.append("           layer_state &= (1<<").append(ltt.getLayer()).append(");\n");
                 b.append("\t\t\treturn MACRO_NONE; ");
                 b.append("\t\t} else {\n");
-                b.append("\t\t\tif (timer_elapsed(start) >").append(ltt.getTimeout()).append(") {\n");
                 b.append("           layer_state ^= (1<<").append(ltt.getLayer()).append(");\n");
                 b.append("           layer_state &= (1<<").append(ltt.getLayer()).append(");\n");
+                b.append("\t\t\tif (timer_elapsed(start) >").append(ltt.getTimeout()).append(") {\n");
                 b.append("\t\t\t\treturn MACRO_NONE;\n");
                 b.append("\t\t\t} else {\n");
                 b.append("\t\t\t\treturn MACRO(");
