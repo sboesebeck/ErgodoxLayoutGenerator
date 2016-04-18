@@ -63,7 +63,7 @@ documentation is also available at <https://boesebeck.name/2016/04/16/ergodoxlay
 
  Also this Softare was not heavily tested on different machines, different OS. If you find an error, plese leave an issue on the github page.
 
- ## Copyright
+## Copyright
  Copyright © 2007 Free Software Foundation, Inc. <http://fsf.org/>
 
  Everyone is permitted to copy and distribute verbatim copies of this license document, but changing it is not allowed.
