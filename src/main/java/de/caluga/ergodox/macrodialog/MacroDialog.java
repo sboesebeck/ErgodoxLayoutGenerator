@@ -147,7 +147,8 @@ public class MacroDialog {
             String selectedItem = macroCBX.getSelectionModel().getSelectedItem();
             for (ErgodoxLayoutLayer layer : ergodoxLayout.getLayers().values()) {
                 for (Key key : layer.getLayout()) {
-                    if (key.getValue().equals("M(" + selectedItem + ")")) {
+
+                    if (key.getValue() != null && key.getValue().equals("M(" + selectedItem + ")")) {
                         key.setValue("KC_TRNS");
                     }
                 }

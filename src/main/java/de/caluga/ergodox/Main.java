@@ -144,6 +144,7 @@ public class Main extends Application {
     private String lastOpenedFile = "last_opened_file";
 
     private List<GuiKey> guiKeys = new ArrayList<>();
+    private Button compileBtn;
 
 
     public static void main(String[] args) {
@@ -280,13 +281,25 @@ public class Main extends Application {
             gk.getInner().addEventHandler(MouseEvent.MOUSE_CLICKED, event -> {
                 event.consume();
                 if (!event.getButton().equals(MouseButton.PRIMARY)) return;
+                Key k1 = currentLayer.getLayout().get(i);
+
                 if (event.getClickCount() > 1) {
 //                    gk.getInner().getContextMenu().show(gk.getInner(), Side.TOP,10,10);return;
-                    doAssignKey(currentLayer.getLayout().get(i));
+                    if (k1.getValue() == null) {
+                        doAssignKey(k1);
+                    } else if (k1.getValue().startsWith("M(")) {
+                        doAssignMacro(k1);
+                    } else if (k1.getValue().startsWith("LT(")) {
+                        doAssignLT(k1);
+                    } else if (k1.getValue().startsWith("TG(")) {
+                        doAssingLayerToggle(k1);
+                    } else {
+                        doAssignKey(k1);
+                    }
                     Platform.runLater(() -> layout());
                     return;
                 }
-                Key k1 = currentLayer.getLayout().get(i);
+
                 System.out.println("Key at " + i + " " + k1.getWidth() + "x" + k1.getHeight() + " value: " + k1.getValue());
                 if (selectedGuiKey != null) {
                     selectedGuiKey.deselect();
@@ -341,7 +354,10 @@ public class Main extends Application {
             primaryStage.setTitle("*new layout");
             layout();
         });
-
+        compileBtn = new Button("compile");
+        compileBtn.addEventHandler(ActionEvent.ACTION, event -> {
+            doCompile();
+        });
 //        macroCombo = new ComboBox<>();
 //        macroCombo.getItems().add("Smiley :-D");
 //        macroCombo.getItems().add("Smiley :-(");
@@ -480,6 +496,7 @@ public class Main extends Application {
         canvas.getChildren().add(led2);
         canvas.getChildren().add(led3);
         canvas.getChildren().add(keyDescription);
+        canvas.getChildren().add(compileBtn);
         Platform.runLater(() -> layout());
 //        layout();
 
@@ -512,6 +529,48 @@ public class Main extends Application {
 
         readConfig();
 
+    }
+
+    private void doCompile() {
+        if (qmkSourceDir == null || !qmkSourceDir.exists()) {
+            Alert a = new Alert(Alert.AlertType.ERROR, "Cannot compile if QMK-Sourcedir is not set!", ButtonType.CLOSE);
+            a.showAndWait();
+            return;
+        }
+        if (currentKeymap == null) {
+            Alert a = new Alert(Alert.AlertType.ERROR, "Please store keymap first!", ButtonType.CLOSE);
+            a.showAndWait();
+            return;
+        }
+
+        execCommand("make clean");
+        execCommand("make");
+    }
+
+    private void execCommand(String cmd) {
+        StringWriter wr = new StringWriter();
+        try {
+            String pth = System.getenv("PATH");
+            pth += ":/usr/local/bin";
+            Process p = Runtime.getRuntime().exec(cmd, new String[]{"PATH=" + pth, "KEYMAP=" + currentKeymap}, new File(qmkSourceDir.getAbsolutePath() + "/keyboard/ergodox_ez/"));
+            BufferedReader br = new BufferedReader(new InputStreamReader(p.getErrorStream()));
+            String l = null;
+            while ((l = br.readLine()) != null) {
+                wr.write(l);
+                wr.write("\n");
+            }
+
+            br = new BufferedReader(new InputStreamReader(p.getInputStream()));
+            while ((l = br.readLine()) != null) {
+                wr.write(l);
+                wr.write("\n");
+            }
+
+            showLongContent("Compilation sucessful", wr.toString());
+        } catch (Exception e) {
+            e.printStackTrace(new PrintWriter(wr));
+            showLongContent("Compilation failed", wr.toString());
+        }
     }
 
     private void newLayout() {
@@ -629,6 +688,36 @@ public class Main extends Application {
         }
     }
 
+
+    private void showLongContent(String msg, String longContent) {
+        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+        alert.setTitle("Information");
+        alert.setHeaderText("Info");
+        alert.setContentText(msg);
+
+
+// Create expandable Exception.
+        Label label = new Label("Detailed info:");
+
+        TextArea textArea = new TextArea(longContent);
+        textArea.setEditable(false);
+        textArea.setWrapText(true);
+
+        textArea.setMaxWidth(Double.MAX_VALUE);
+        textArea.setMaxHeight(Double.MAX_VALUE);
+        GridPane.setVgrow(textArea, Priority.ALWAYS);
+        GridPane.setHgrow(textArea, Priority.ALWAYS);
+
+        GridPane expContent = new GridPane();
+        expContent.setMaxWidth(Double.MAX_VALUE);
+        expContent.add(label, 0, 0);
+        expContent.add(textArea, 0, 1);
+
+// Set expandable Exception into the dialog pane.
+        alert.getDialogPane().setExpandableContent(expContent);
+
+        alert.showAndWait();
+    }
 
     private void showErrorMessage(String msg, Exception ex) {
         Alert alert = new Alert(Alert.AlertType.ERROR);
@@ -912,6 +1001,7 @@ public class Main extends Application {
         saveImgBtn.relocate(currentWindowWidth / 2 + 50, currentWindowHeight - 60);
         openBtn.relocate(currentWindowWidth / 2, currentWindowHeight - 30);
         reopenBtn.relocate(currentWindowWidth / 2 + 50, currentWindowHeight - 30);
+        compileBtn.relocate(currentWindowWidth - 200, currentWindowHeight - 30);
 
         layerCombo.relocate(5, 20);
         double cx = layerCombo.getWidth();

@@ -113,6 +113,8 @@ public class MacroEditor {
         holdKeyMacroRB.setToggleGroup(tg);
         RadioButton layerToggleRB = new RadioButton("layertoggle macro");
         layerToggleRB.setToggleGroup(tg);
+        RadioButton layerToggleTypeRB = new RadioButton("layertoggle type macro");
+        layerToggleTypeRB.setToggleGroup(tg);
         RadioButton customMacro = new RadioButton("Custom macro");
         customMacro.setToggleGroup(tg);
         GridPane content = new GridPane();
@@ -125,6 +127,7 @@ public class MacroEditor {
         p.getChildren().add(holdKeyMacroRB);
         p.getChildren().add(customMacro);
         p.getChildren().add(layerToggleRB);
+        p.getChildren().add(layerToggleTypeRB);
 
         typeMacroRB.setSelected(true);
         showTypeMacro(content);
@@ -135,6 +138,11 @@ public class MacroEditor {
             p.requestLayout();
         });
 
+        layerToggleTypeRB.addEventHandler(ActionEvent.ACTION, event -> {
+            showLayerToggleTypeMacor(content);
+            content.requestLayout();
+            p.requestLayout();
+        });
         longPMacroRB.addEventHandler(ActionEvent.ACTION, event -> {
             showLongPressMacro(content);
         });
@@ -150,7 +158,6 @@ public class MacroEditor {
         layerToggleRB.addEventHandler(ActionEvent.ACTION, event -> {
             showLayerToggle(content);
         });
-
 
 
         nameTF = new TextField();
@@ -193,6 +200,8 @@ public class MacroEditor {
                 m = getLayerToggleMacro();
             } else if (holdKeyMacroRB.isSelected()) {
                 m = getHoldKeyMacro();
+            } else if (layerToggleTypeRB.isSelected()) {
+                m = getLayerToggleTypeMacro();
             } else if (customMacro.isSelected()) {
                 m = getCustomMacro();
             }
@@ -238,6 +247,16 @@ public class MacroEditor {
                 KeymapWriter.macroActionListToCString(b, tm.getActions());
                 b.setLength(b.length() - 1);
                 macroContent1.setText(b.toString());
+            } else if (theMacro instanceof LayerToggleTypeMacro) {
+                layerToggleTypeRB.setSelected(true);
+                showLayerToggleTypeMacor(content);
+                LayerToggleTypeMacro ltt = (LayerToggleTypeMacro) theMacro;
+                KeymapWriter.macroActionListToCString(b, ltt.getActionsOnType());
+                b.setLength(b.length() - 1);
+                macroContent1.setText(b.toString());
+                layersCBX.getSelectionModel().select(ltt.getLayer());
+                timeoutCBX.getSelectionModel().select(ltt.getTimeout());
+
             } else if (theMacro instanceof LayerToggleMacro) {
                 layerToggleRB.setSelected(true);
                 showLayerToggle(content);
@@ -249,6 +268,36 @@ public class MacroEditor {
         macroEditor.showAndWait();
 
 
+    }
+
+    private void showLayerToggleTypeMacor(GridPane content) {
+        content.getChildren().clear();
+        content.add(new Label("Toggle layer on hold and type macro"), 0, 0);
+        macroContent1 = new TextField("");
+        macroContent1.setMinWidth(350);
+        layersCBX = createLayerCBX();
+        timeoutCBX = createTimeoutCBX();
+        content.add(new Label("on type"), 0, 1);
+        content.add(new Label("layer switch"), 0, 2);
+        content.add(new Label("Timeout"), 0, 3);
+        content.add(macroContent1, 1, 1);
+        content.add(layersCBX, 1, 2);
+        content.add(timeoutCBX, 1, 3);
+        Button btn = new Button("convert text to macro");
+        btn.addEventHandler(ActionEvent.ACTION, event -> {
+            macroContent1.setText(macronifyString(macroContent1.getText()));
+        });
+        content.add(btn, 2, 1);
+
+
+    }
+
+    private LayerToggleTypeMacro getLayerToggleTypeMacro() {
+        LayerToggleTypeMacro ret = new LayerToggleTypeMacro();
+        ret.setTimeout(timeoutCBX.getSelectionModel().getSelectedItem());
+        ret.setActionsOnType(KeymapParser.parseActionList(macroContent1.getText()));
+        ret.setLayer(layersCBX.getSelectionModel().getSelectedItem());
+        return ret;
     }
 
     private Macro getCustomMacro() {
@@ -267,7 +316,7 @@ public class MacroEditor {
 
     private void showHoldKeyMacro(GridPane content) {
         content.getChildren().clear();
-        content.add(new Label("Hold key makro"), 0, 0);
+        content.add(new Label("Hold key macro"), 0, 0);
         macroContent1 = new TextField("");
         macroContent2 = new TextField("");
         content.add(new Label("on press"), 0, 1);
@@ -381,12 +430,17 @@ public class MacroEditor {
     private void showLayerToggle(GridPane content) {
         content.getChildren().clear();
         content.add(new Label("layer toggle macro:"), 0, 0, 2, 1);
-        layersCBX = new ComboBox<>();
-        for (String k : layout.getLayers().keySet()) {
-            layersCBX.getItems().add(k);
-        }
+        layersCBX = createLayerCBX();
         content.add(new Label("layer:"), 0, 1);
         content.add(layersCBX, 1, 1);
+    }
+
+    private ComboBox<String> createLayerCBX() {
+        ComboBox<String> ret = new ComboBox<>();
+        for (String k : layout.getLayers().keySet()) {
+            ret.getItems().add(k);
+        }
+        return ret;
     }
 
     private LayerToggleMacro getLayerToggleMacro() {
