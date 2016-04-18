@@ -56,9 +56,7 @@ or toggle a certain layer.
 
 documentation is also available at <https://boesebeck.name/2016/04/16/ergodoxlayoutgenerator-documentation/>
 
-
-
- ## Disclaimer
+## Disclaimer
 
  This code is in a very early development stage, more like a prototype and proof of concept. The code is still in prototype
  level and not really "good". But it seems to work for now.
