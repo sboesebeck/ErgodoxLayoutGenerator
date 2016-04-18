@@ -543,34 +543,36 @@ public class Main extends Application {
             return;
         }
 
-        execCommand("make clean");
-        execCommand("make");
-    }
-
-    private void execCommand(String cmd) {
         StringWriter wr = new StringWriter();
         try {
-            String pth = System.getenv("PATH");
-            pth += ":/usr/local/bin";
-            Process p = Runtime.getRuntime().exec(cmd, new String[]{"PATH=" + pth, "KEYMAP=" + currentKeymap}, new File(qmkSourceDir.getAbsolutePath() + "/keyboard/ergodox_ez/"));
-            BufferedReader br = new BufferedReader(new InputStreamReader(p.getErrorStream()));
-            String l = null;
-            while ((l = br.readLine()) != null) {
-                wr.write(l);
-                wr.write("\n");
-            }
-
-            br = new BufferedReader(new InputStreamReader(p.getInputStream()));
-            while ((l = br.readLine()) != null) {
-                wr.write(l);
-                wr.write("\n");
-            }
-
+            execCommand(wr, "make clean");
+            execCommand(wr, "make");
             showLongContent("Compilation sucessful", wr.toString());
         } catch (Exception e) {
             e.printStackTrace(new PrintWriter(wr));
             showLongContent("Compilation failed", wr.toString());
         }
+    }
+
+    private void execCommand(Writer wr, String cmd) throws Exception {
+        String pth = System.getenv("PATH");
+        pth += ":/usr/local/bin";
+        wr.write("---------------------->        Running command: " + cmd + "\n");
+        Process p = Runtime.getRuntime().exec(cmd, new String[]{"PATH=" + pth, "KEYMAP=" + currentKeymap}, new File(qmkSourceDir.getAbsolutePath() + "/keyboard/ergodox_ez/"));
+        BufferedReader br = new BufferedReader(new InputStreamReader(p.getErrorStream()));
+        String l = null;
+        while ((l = br.readLine()) != null) {
+            wr.write(l);
+            wr.write("\n");
+        }
+
+        br = new BufferedReader(new InputStreamReader(p.getInputStream()));
+        while ((l = br.readLine()) != null) {
+            wr.write(l);
+            wr.write("\n");
+        }
+
+
     }
 
     private void newLayout() {
