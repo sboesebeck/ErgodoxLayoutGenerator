@@ -21,17 +21,21 @@ or toggle a certain layer.
 
  ## Documentation
 
- When starting the program (which right now can only be done from an IDE), it will show an empty ErgoDox (or ErgoDox-EZ in that respect)
- Layout. In the current version, you can set any key you see to a key you can action.
- When you click on a key representation, it will be marked. If you now action a key on your keyboard, this key will be recorded there.
+ When starting the program, it will show an empty ErgoDox (or ErgoDox-EZ in that respect)
+ layout.
+ When you click on a key representation, it will be marked. Rightclicking on it will then show a context menu where you can either assign a key, a macro or similar function
+ when doubleclicking you will either edit the current assignment or assign a key.
 
- please keep in mind that this is very erarly development stage, so right now this information cannot be stored or otherwise use.
+ When you're finished with your layout, you can easily store it as `keamap.c` file. You need to specify a _directory_ where you want to store it.
+ The directory should reside in the `qmk-sourcedir`, in order to be able to be compileable.
+
+ There is a compile button, where you can have your keymap compiled - do not forget to save your changes before trying to compile.
 
  You can also open an existing keymap file. You should sett the QMK-Sourcedir in order to find the keymap more easily.
  This setting will be stored for the next start, so you can easily re-open any keymap you worked on.
 
  When you click on the Button "open", it will show you the current available layouts in your qmk-sourcedir. You need only choose
- the directory in which the keymap.c file is located.
+ the directory in which the `keymap.c` file is located.
 
  After the keymap was parsed and opened you can now see the layout of `BASE`. The parsing only works properly, if all layers do have
  a name (Usually done using `#define` at the top of the file). If that is missing, the parsing might (or will) fail.
