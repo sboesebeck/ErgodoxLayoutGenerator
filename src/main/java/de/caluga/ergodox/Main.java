@@ -87,6 +87,10 @@ import javafx.stage.Stage;
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.*;
+import java.nio.file.FileSystems;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.*;
 
 
@@ -546,16 +550,29 @@ public class Main extends Application {
 
         StringWriter wr = new StringWriter();
         try {
-            execCommand(wr, "make clean");
-            execCommand(wr, "make");
+            if (execCommand(wr, "make clean") != 0) throw new RuntimeException("Make clean failed!");
+            if (execCommand(wr, "make") != 0) throw new RuntimeException("Compilation failed");
             showLongContent("Compilation sucessful", wr.toString());
+            Alert a = new Alert(Alert.AlertType.CONFIRMATION, "Shall I copy the resulting .hex-file to the corresponding layout dir?", ButtonType.YES, ButtonType.NO);
+            Optional<ButtonType> res = a.showAndWait();
+            if (res.isPresent()) {
+                if (res.get().equals(ButtonType.YES)) {
+                    try {
+                        Path source = FileSystems.getDefault().getPath(qmkSourceDir.getAbsolutePath(), "keyboard", "ergodox_ez", "ergodox_ez.hex");
+                        Path dest = FileSystems.getDefault().getPath(qmkSourceDir.getAbsolutePath(), "keyboard", "ergodox_ez", "keymaps", currentKeymap, currentKeymap + ".hex");
+                        Files.copy(source, dest, StandardCopyOption.REPLACE_EXISTING);
+                    } catch (IOException e) {
+                        showErrorMessage("Could not copy hex file", e);
+                    }
+                }
+            }
         } catch (Exception e) {
             e.printStackTrace(new PrintWriter(wr));
             showLongContent("Compilation failed", wr.toString());
         }
     }
 
-    private void execCommand(Writer wr, String cmd) throws Exception {
+    private int execCommand(Writer wr, String cmd) throws Exception {
         String pth = System.getenv("PATH");
         pth += ":/usr/local/bin";
         wr.write("---------------------->        Running command: " + cmd + "\n");
@@ -572,6 +589,7 @@ public class Main extends Application {
             wr.write(l);
             wr.write("\n");
         }
+        return p.exitValue();
 
 
     }
@@ -801,19 +819,20 @@ public class Main extends Application {
             WritableImage image = canvas.snapshot(new SnapshotParameters(), null);
 
             int snapshotHeight = (int) (image.getHeight() - 65);
-            int macroDescHeight=50;
-            for (String macroName:ergodoxLayout.getMacros().keySet()){
+            int macroDescHeight = 50;
+            for (String macroName : ergodoxLayout.getMacros().keySet()) {
                 Macro macro = ergodoxLayout.getMacros().get(macroName);
                 String description = macro.getDescription();
 
-                int cnt=0; int lidx=0;
-                while (description.indexOf('\n',lidx)>0){
+                int cnt = 0;
+                int lidx = 0;
+                while (description.indexOf('\n', lidx) > 0) {
                     cnt++;
-                    lidx=description.indexOf('\n',lidx)+1;
+                    lidx = description.indexOf('\n', lidx) + 1;
                 }
-                macroDescHeight+=40+ 30*cnt;
+                macroDescHeight += 40 + 30 * cnt;
             }
-            BufferedImage img = new BufferedImage((int) image.getWidth(), snapshotHeight * layerCombo.getItems().size()+macroDescHeight, BufferedImage.TYPE_INT_RGB);
+            BufferedImage img = new BufferedImage((int) image.getWidth(), snapshotHeight * layerCombo.getItems().size() + macroDescHeight, BufferedImage.TYPE_INT_RGB);
             createLayer.setVisible(false);
             deleteLayer.setVisible(false);
             keyDescription.setVisible(false);
@@ -828,27 +847,28 @@ public class Main extends Application {
                 img.getGraphics().drawImage(SwingFXUtils.fromFXImage(image, null), 0, i * snapshotHeight, null);
             }
 
-            int x=50;
-            int y=60;
-            Canvas c=new Canvas(img.getWidth(),macroDescHeight);
+            int x = 50;
+            int y = 60;
+            Canvas c = new Canvas(img.getWidth(), macroDescHeight);
             c.getGraphicsContext2D().setFont(Font.font(35));
-            c.getGraphicsContext2D().fillText("Macro Descriptions:",50,25);
+            c.getGraphicsContext2D().fillText("Macro Descriptions:", 50, 25);
             c.getGraphicsContext2D().setFont(Font.font(20));
-            for (String macroName:ergodoxLayout.getMacros().keySet()){
+            for (String macroName : ergodoxLayout.getMacros().keySet()) {
                 Macro macro = ergodoxLayout.getMacros().get(macroName);
                 String description = macro.getDescription();
-                c.getGraphicsContext2D().fillText(description,x,y);
-                int cnt=0; int lidx=0;
-                while (description.indexOf('\n',lidx)>0){
+                c.getGraphicsContext2D().fillText(description, x, y);
+                int cnt = 0;
+                int lidx = 0;
+                while (description.indexOf('\n', lidx) > 0) {
                     cnt++;
-                    lidx=description.indexOf('\n',lidx)+1;
+                    lidx = description.indexOf('\n', lidx) + 1;
                 }
-                y+=40+ 30*cnt;
-                c.getGraphicsContext2D().strokeLine(x-10,y-30,img.getWidth()-10,y-30);
+                y += 40 + 30 * cnt;
+                c.getGraphicsContext2D().strokeLine(x - 10, y - 30, img.getWidth() - 10, y - 30);
             }
 
-            image=c.snapshot(new SnapshotParameters(),null);
-            img.getGraphics().drawImage(SwingFXUtils.fromFXImage(image,null),0,layerCombo.getItems().size()*snapshotHeight,null);
+            image = c.snapshot(new SnapshotParameters(), null);
+            img.getGraphics().drawImage(SwingFXUtils.fromFXImage(image, null), 0, layerCombo.getItems().size() * snapshotHeight, null);
 
             ImageIO.write(img, "png", file);
             Platform.runLater(() -> {

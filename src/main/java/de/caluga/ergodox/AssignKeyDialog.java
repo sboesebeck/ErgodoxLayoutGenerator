@@ -283,9 +283,9 @@ public class AssignKeyDialog {
             for (CheckBox b : checkBoxes) {
                 if (b.isSelected()) cnt++;
             }
-            if (cnt>1){
-                if (!keyCodexCBX.getSelectionModel().getSelectedItem().startsWith("KC_")){
-                    Alert a=new Alert(Alert.AlertType.ERROR,"Would need to create macro, but macros only can work with KC_ keycodes!",ButtonType.OK);
+            if (cnt > 1) {
+                if (!keyCodexCBX.getSelectionModel().getSelectedItem().startsWith("KC_")) {
+                    Alert a = new Alert(Alert.AlertType.ERROR, "Would need to create macro, but macros only can work with KC_ keycodes!", ButtonType.OK);
                     a.showAndWait();
                     dialog.showAndWait();
                     return;
