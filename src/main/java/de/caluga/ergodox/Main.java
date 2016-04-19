@@ -69,6 +69,7 @@ import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.SnapshotParameters;
+import javafx.scene.canvas.Canvas;
 import javafx.scene.control.*;
 import javafx.scene.image.WritableImage;
 import javafx.scene.input.ContextMenuEvent;
@@ -144,6 +145,7 @@ public class Main extends Application {
     private String lastOpenedFile = "last_opened_file";
 
     private List<GuiKey> guiKeys = new ArrayList<>();
+    private Button compileBtn;
 
 
     public static void main(String[] args) {
@@ -280,13 +282,25 @@ public class Main extends Application {
             gk.getInner().addEventHandler(MouseEvent.MOUSE_CLICKED, event -> {
                 event.consume();
                 if (!event.getButton().equals(MouseButton.PRIMARY)) return;
+                Key k1 = currentLayer.getLayout().get(i);
+
                 if (event.getClickCount() > 1) {
 //                    gk.getInner().getContextMenu().show(gk.getInner(), Side.TOP,10,10);return;
-                    doAssignKey(currentLayer.getLayout().get(i));
+                    if (k1.getValue() == null) {
+                        doAssignKey(k1);
+                    } else if (k1.getValue().startsWith("M(")) {
+                        doAssignMacro(k1);
+                    } else if (k1.getValue().startsWith("LT(")) {
+                        doAssignLT(k1);
+                    } else if (k1.getValue().startsWith("TG(")) {
+                        doAssingLayerToggle(k1);
+                    } else {
+                        doAssignKey(k1);
+                    }
                     Platform.runLater(() -> layout());
                     return;
                 }
-                Key k1 = currentLayer.getLayout().get(i);
+
                 System.out.println("Key at " + i + " " + k1.getWidth() + "x" + k1.getHeight() + " value: " + k1.getValue());
                 if (selectedGuiKey != null) {
                     selectedGuiKey.deselect();
@@ -341,7 +355,10 @@ public class Main extends Application {
             primaryStage.setTitle("*new layout");
             layout();
         });
-
+        compileBtn = new Button("compile");
+        compileBtn.addEventHandler(ActionEvent.ACTION, event -> {
+            doCompile();
+        });
 //        macroCombo = new ComboBox<>();
 //        macroCombo.getItems().add("Smiley :-D");
 //        macroCombo.getItems().add("Smiley :-(");
@@ -480,6 +497,7 @@ public class Main extends Application {
         canvas.getChildren().add(led2);
         canvas.getChildren().add(led3);
         canvas.getChildren().add(keyDescription);
+        canvas.getChildren().add(compileBtn);
         Platform.runLater(() -> layout());
 //        layout();
 
@@ -511,6 +529,50 @@ public class Main extends Application {
         //Read in config
 
         readConfig();
+
+    }
+
+    private void doCompile() {
+        if (qmkSourceDir == null || !qmkSourceDir.exists()) {
+            Alert a = new Alert(Alert.AlertType.ERROR, "Cannot compile if QMK-Sourcedir is not set!", ButtonType.CLOSE);
+            a.showAndWait();
+            return;
+        }
+        if (currentKeymap == null) {
+            Alert a = new Alert(Alert.AlertType.ERROR, "Please store keymap first!", ButtonType.CLOSE);
+            a.showAndWait();
+            return;
+        }
+
+        StringWriter wr = new StringWriter();
+        try {
+            execCommand(wr, "make clean");
+            execCommand(wr, "make");
+            showLongContent("Compilation sucessful", wr.toString());
+        } catch (Exception e) {
+            e.printStackTrace(new PrintWriter(wr));
+            showLongContent("Compilation failed", wr.toString());
+        }
+    }
+
+    private void execCommand(Writer wr, String cmd) throws Exception {
+        String pth = System.getenv("PATH");
+        pth += ":/usr/local/bin";
+        wr.write("---------------------->        Running command: " + cmd + "\n");
+        Process p = Runtime.getRuntime().exec(cmd, new String[]{"PATH=" + pth, "KEYMAP=" + currentKeymap}, new File(qmkSourceDir.getAbsolutePath() + "/keyboard/ergodox_ez/"));
+        BufferedReader br = new BufferedReader(new InputStreamReader(p.getErrorStream()));
+        String l = null;
+        while ((l = br.readLine()) != null) {
+            wr.write(l);
+            wr.write("\n");
+        }
+
+        br = new BufferedReader(new InputStreamReader(p.getInputStream()));
+        while ((l = br.readLine()) != null) {
+            wr.write(l);
+            wr.write("\n");
+        }
+
 
     }
 
@@ -571,25 +633,41 @@ public class Main extends Application {
     }
 
     private void doAssignMacro(Key k) {
-        MacroDialog dlg = new MacroDialog(ergodoxLayout);
-        dlg.show(k);
+        try {
+            MacroDialog dlg = new MacroDialog(ergodoxLayout);
+            dlg.show(k);
+        } catch (Exception e) {
+            showErrorMessage("Could not assign macro", e);
+        }
     }
 
     private void doAssingLayerToggle(Key k) {
-        AssignLayerToggleDialog dlg = new AssignLayerToggleDialog(ergodoxLayout);
-        dlg.show(k);
+        try {
+            AssignLayerToggleDialog dlg = new AssignLayerToggleDialog(ergodoxLayout);
+            dlg.show(k);
+        } catch (Exception e) {
+            showErrorMessage("could not assign layertoggle", e);
+        }
 
     }
 
     private void doAssignLT(Key k) {
-        AssignLTDialog dlg = new AssignLTDialog(ergodoxLayout);
-        dlg.show(k);
+        try {
+            AssignLTDialog dlg = new AssignLTDialog(ergodoxLayout);
+            dlg.show(k);
+        } catch (Exception e) {
+            showErrorMessage("Could not assign LT", e);
+        }
 
     }
 
     private void doAssignKey(Key k) {
-        AssignKeyDialog ak = new AssignKeyDialog(ergodoxLayout);
-        ak.show(k);
+        try {
+            AssignKeyDialog ak = new AssignKeyDialog(ergodoxLayout);
+            ak.show(k);
+        } catch (Exception e) {
+            showErrorMessage("could not assign key", e);
+        }
 
     }
 
@@ -629,6 +707,36 @@ public class Main extends Application {
         }
     }
 
+
+    private void showLongContent(String msg, String longContent) {
+        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+        alert.setTitle("Information");
+        alert.setHeaderText("Info");
+        alert.setContentText(msg);
+
+
+// Create expandable Exception.
+        Label label = new Label("Detailed info:");
+
+        TextArea textArea = new TextArea(longContent);
+        textArea.setEditable(false);
+        textArea.setWrapText(true);
+
+        textArea.setMaxWidth(Double.MAX_VALUE);
+        textArea.setMaxHeight(Double.MAX_VALUE);
+        GridPane.setVgrow(textArea, Priority.ALWAYS);
+        GridPane.setHgrow(textArea, Priority.ALWAYS);
+
+        GridPane expContent = new GridPane();
+        expContent.setMaxWidth(Double.MAX_VALUE);
+        expContent.add(label, 0, 0);
+        expContent.add(textArea, 0, 1);
+
+// Set expandable Exception into the dialog pane.
+        alert.getDialogPane().setExpandableContent(expContent);
+
+        alert.showAndWait();
+    }
 
     private void showErrorMessage(String msg, Exception ex) {
         Alert alert = new Alert(Alert.AlertType.ERROR);
@@ -692,8 +800,20 @@ public class Main extends Application {
             layerCombo.getSelectionModel().select(0);
             WritableImage image = canvas.snapshot(new SnapshotParameters(), null);
 
-            int snapshowHeight = (int) (image.getHeight() - 65);
-            BufferedImage img = new BufferedImage((int) image.getWidth(), snapshowHeight * layerCombo.getItems().size(), BufferedImage.TYPE_INT_RGB);
+            int snapshotHeight = (int) (image.getHeight() - 65);
+            int macroDescHeight=50;
+            for (String macroName:ergodoxLayout.getMacros().keySet()){
+                Macro macro = ergodoxLayout.getMacros().get(macroName);
+                String description = macro.getDescription();
+
+                int cnt=0; int lidx=0;
+                while (description.indexOf('\n',lidx)>0){
+                    cnt++;
+                    lidx=description.indexOf('\n',lidx)+1;
+                }
+                macroDescHeight+=40+ 30*cnt;
+            }
+            BufferedImage img = new BufferedImage((int) image.getWidth(), snapshotHeight * layerCombo.getItems().size()+macroDescHeight, BufferedImage.TYPE_INT_RGB);
             createLayer.setVisible(false);
             deleteLayer.setVisible(false);
             keyDescription.setVisible(false);
@@ -705,9 +825,30 @@ public class Main extends Application {
                 currentLayer = ergodoxLayout.getLayers().get(layerCombo.getItems().get(i));
                 layout();
                 image = canvas.snapshot(new SnapshotParameters(), null);
-                img.getGraphics().drawImage(SwingFXUtils.fromFXImage(image, null), 0, i * snapshowHeight, null);
+                img.getGraphics().drawImage(SwingFXUtils.fromFXImage(image, null), 0, i * snapshotHeight, null);
             }
 
+            int x=50;
+            int y=60;
+            Canvas c=new Canvas(img.getWidth(),macroDescHeight);
+            c.getGraphicsContext2D().setFont(Font.font(35));
+            c.getGraphicsContext2D().fillText("Macro Descriptions:",50,25);
+            c.getGraphicsContext2D().setFont(Font.font(20));
+            for (String macroName:ergodoxLayout.getMacros().keySet()){
+                Macro macro = ergodoxLayout.getMacros().get(macroName);
+                String description = macro.getDescription();
+                c.getGraphicsContext2D().fillText(description,x,y);
+                int cnt=0; int lidx=0;
+                while (description.indexOf('\n',lidx)>0){
+                    cnt++;
+                    lidx=description.indexOf('\n',lidx)+1;
+                }
+                y+=40+ 30*cnt;
+                c.getGraphicsContext2D().strokeLine(x-10,y-30,img.getWidth()-10,y-30);
+            }
+
+            image=c.snapshot(new SnapshotParameters(),null);
+            img.getGraphics().drawImage(SwingFXUtils.fromFXImage(image,null),0,layerCombo.getItems().size()*snapshotHeight,null);
 
             ImageIO.write(img, "png", file);
             Platform.runLater(() -> {
@@ -912,6 +1053,7 @@ public class Main extends Application {
         saveImgBtn.relocate(currentWindowWidth / 2 + 50, currentWindowHeight - 60);
         openBtn.relocate(currentWindowWidth / 2, currentWindowHeight - 30);
         reopenBtn.relocate(currentWindowWidth / 2 + 50, currentWindowHeight - 30);
+        compileBtn.relocate(currentWindowWidth - 200, currentWindowHeight - 30);
 
         layerCombo.relocate(5, 20);
         double cx = layerCombo.getWidth();

@@ -168,6 +168,42 @@ public class KeymapWriter {
                 macroActionListToCString(b, hm.getOnRelease());
                 getReleaseCString(b, hm.getOnPress()); //Make sure, all DOWNS are UPs TODO: check if double UPs cause problems!
                 b.append("END);\n\t\t}\n");
+            } else if (layout.getMacros().get(macroName) instanceof LayerToggleTypeMacro) {
+                LayerToggleTypeMacro ltt = (LayerToggleTypeMacro) layout.getMacros().get(macroName);
+                b.append("if (record->event.pressed) {\n" +
+                        "\t\t\tstart = timer_read();\n");
+                b.append("           layer_state ^= (1<<").append(ltt.getLayer()).append(");\n");
+                b.append("           layer_state &= (1<<").append(ltt.getLayer()).append(");\n");
+                b.append("\t\t\treturn MACRO_NONE; ");
+                b.append("\t\t} else {\n");
+                b.append("           layer_state ^= (1<<").append(ltt.getLayer()).append(");\n");
+                b.append("           layer_state &= (1<<").append(ltt.getLayer()).append(");\n");
+                b.append("\t\t\tif (timer_elapsed(start) >").append(ltt.getTimeout()).append(") {\n");
+                b.append("\t\t\t\treturn MACRO_NONE;\n");
+                b.append("\t\t\t} else {\n");
+                b.append("\t\t\t\treturn MACRO(");
+                macroActionListToCString(b, ltt.getActionsOnType());
+                b.append("END);\n");
+                b.append("\t\t\t}\n" +
+                        "\t\t}\n");
+            } else if (layout.getMacros().get(macroName) instanceof LayerToggleAndHoldMacro) {
+                LayerToggleAndHoldMacro lth = (LayerToggleAndHoldMacro) layout.getMacros().get(macroName);
+                b.append("if (record->event.pressed){\n" + "         start = timer_read();\n" + "         layer_state ^=(1<<")
+                        .append(lth.getLayer())
+                        .append(");\n")
+                        .append("         layer_state &=(1<<")
+                        .append(lth.getLayer()).append(");\n")
+                        .append(" } else {\n")
+                        .append("         if (timer_elapsed(start) > ")
+                        .append(lth.getTimeout())
+                        .append(") {\n")
+                        .append("                 layer_state^=(1<<")
+                        .append(lth.getLayer())
+                        .append(");\n").append("                 layer_state&=(1<<")
+                        .append(lth.getLayer())
+                        .append(");\n").append("         }\n")
+                        .append(" }\n")
+                        .append("return MACRO_NONE;\n");
             } else if (layout.getMacros().get(macroName) instanceof LayerToggleMacro) {
                 LayerToggleMacro lt = (LayerToggleMacro) layout.getMacros().get(macroName);
                 b.append(" if (record->event.pressed){\n" +

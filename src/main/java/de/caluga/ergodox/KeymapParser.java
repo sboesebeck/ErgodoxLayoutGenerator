@@ -242,6 +242,8 @@ public class KeymapParser {
             Matcher mLayerToggleMacro = LayerToggleMacro.pattern.matcher(normalizedMacroContent);
             Matcher mLTTypeMacro = LongPressAndTypeMacro.pattern.matcher(normalizedMacroContent);
             Matcher mHoldKeyMacro = HoldKeyMacro.pattern.matcher(normalizedMacroContent);
+            Matcher mLayerToggleTypeMacro = LayerToggleTypeMacro.pattern.matcher(normalizedMacroContent);
+            Matcher mLayertoggleHoldMacro = LayerToggleAndHoldMacro.pattern.matcher(normalizedMacroContent);
             Macro macro;
             if (mTypingMacro.matches()) {
                 String typing = mTypingMacro.group(1);
@@ -253,6 +255,15 @@ public class KeymapParser {
                 System.out.println("Got Macro: " + tm.toString());
                 macro = tm;
 
+            } else if (mLayerToggleTypeMacro.matches()) {
+                String layer = mLayerToggleTypeMacro.group(1);
+                System.out.println("Layer toggle and typing combination layer: " + layer);
+                List<MacroAction> list = parseActionList(mLayerToggleTypeMacro.group(3));
+                LayerToggleTypeMacro tm = new LayerToggleTypeMacro();
+                tm.setLayer(layer);
+                tm.setActionsOnType(list);
+                tm.setTimeout(Integer.valueOf(mLayerToggleTypeMacro.group(2)));
+                macro = tm;
             } else if (mHoldKeyMacro.matches()) {
                 System.out.println("HoldKeyMacro matches!");
                 System.out.println("OnKeyPress: " + mHoldKeyMacro.group(1) + "  onRelease: " + mHoldKeyMacro.group(2));
@@ -296,6 +307,15 @@ public class KeymapParser {
                 }
                 macro = lt;
 
+            } else if (mLayertoggleHoldMacro.matches()) {
+                String layer = mLayertoggleHoldMacro.group(1);
+                String tm = mLayertoggleHoldMacro.group(2);
+                System.out.println("Layer toggle and hold macro. Layer " + layer);
+                LayerToggleAndHoldMacro lth = new LayerToggleAndHoldMacro();
+                lth.setName(macroName);
+                lth.setTimeout(Integer.valueOf(tm));
+                lth.setLayer(layer);
+                macro = lth;
             } else if (mLayerToggleMacro.matches()) {
                 System.out.println("Layer toggle macro: Layer " + mLayerToggleMacro.group(1));
                 LayerToggleMacro lm = new LayerToggleMacro();
