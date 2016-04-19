@@ -139,7 +139,7 @@ public class MacroDialog {
         Button delMacro = new Button("Del macro");
         delMacro.addEventHandler(ActionEvent.ACTION, event -> {
             //Checking for the macro in the layout
-            Alert confirmation = new Alert(Alert.AlertType.CONFIRMATION, "Really Delete this macro?", ButtonType.OK, ButtonType.CANCEL);
+            Alert confirmation = new Alert(Alert.AlertType.CONFIRMATION, "Really Delete this macro " + macroCBX.getSelectionModel().getSelectedItem() + "?", ButtonType.OK, ButtonType.CANCEL);
             Optional<ButtonType> res = confirmation.showAndWait();
             if (res.isPresent()) {
                 if (res.get().equals(ButtonType.CANCEL)) return;
@@ -147,7 +147,7 @@ public class MacroDialog {
             String selectedItem = macroCBX.getSelectionModel().getSelectedItem();
             for (ErgodoxLayoutLayer layer : ergodoxLayout.getLayers().values()) {
                 for (Key key : layer.getLayout()) {
-                    if (key.getValue().equals("M(" + selectedItem + ")")) {
+                    if (key.getValue() != null && key.getValue().equals("M(" + selectedItem + ")")) {
                         key.setValue("KC_TRNS");
                     }
                 }
