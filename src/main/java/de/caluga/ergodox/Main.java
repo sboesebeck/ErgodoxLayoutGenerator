@@ -69,6 +69,7 @@ import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.SnapshotParameters;
+import javafx.scene.canvas.Canvas;
 import javafx.scene.control.*;
 import javafx.scene.image.WritableImage;
 import javafx.scene.input.ContextMenuEvent;
@@ -799,8 +800,20 @@ public class Main extends Application {
             layerCombo.getSelectionModel().select(0);
             WritableImage image = canvas.snapshot(new SnapshotParameters(), null);
 
-            int snapshowHeight = (int) (image.getHeight() - 65);
-            BufferedImage img = new BufferedImage((int) image.getWidth(), snapshowHeight * layerCombo.getItems().size(), BufferedImage.TYPE_INT_RGB);
+            int snapshotHeight = (int) (image.getHeight() - 65);
+            int macroDescHeight=50;
+            for (String macroName:ergodoxLayout.getMacros().keySet()){
+                Macro macro = ergodoxLayout.getMacros().get(macroName);
+                String description = macro.getDescription();
+
+                int cnt=0; int lidx=0;
+                while (description.indexOf('\n',lidx)>0){
+                    cnt++;
+                    lidx=description.indexOf('\n',lidx)+1;
+                }
+                macroDescHeight+=40+ 30*cnt;
+            }
+            BufferedImage img = new BufferedImage((int) image.getWidth(), snapshotHeight * layerCombo.getItems().size()+macroDescHeight, BufferedImage.TYPE_INT_RGB);
             createLayer.setVisible(false);
             deleteLayer.setVisible(false);
             keyDescription.setVisible(false);
@@ -812,9 +825,30 @@ public class Main extends Application {
                 currentLayer = ergodoxLayout.getLayers().get(layerCombo.getItems().get(i));
                 layout();
                 image = canvas.snapshot(new SnapshotParameters(), null);
-                img.getGraphics().drawImage(SwingFXUtils.fromFXImage(image, null), 0, i * snapshowHeight, null);
+                img.getGraphics().drawImage(SwingFXUtils.fromFXImage(image, null), 0, i * snapshotHeight, null);
             }
 
+            int x=50;
+            int y=60;
+            Canvas c=new Canvas(img.getWidth(),macroDescHeight);
+            c.getGraphicsContext2D().setFont(Font.font(35));
+            c.getGraphicsContext2D().fillText("Macro Descriptions:",50,25);
+            c.getGraphicsContext2D().setFont(Font.font(20));
+            for (String macroName:ergodoxLayout.getMacros().keySet()){
+                Macro macro = ergodoxLayout.getMacros().get(macroName);
+                String description = macro.getDescription();
+                c.getGraphicsContext2D().fillText(description,x,y);
+                int cnt=0; int lidx=0;
+                while (description.indexOf('\n',lidx)>0){
+                    cnt++;
+                    lidx=description.indexOf('\n',lidx)+1;
+                }
+                y+=40+ 30*cnt;
+                c.getGraphicsContext2D().strokeLine(x-10,y-30,img.getWidth()-10,y-30);
+            }
+
+            image=c.snapshot(new SnapshotParameters(),null);
+            img.getGraphics().drawImage(SwingFXUtils.fromFXImage(image,null),0,layerCombo.getItems().size()*snapshotHeight,null);
 
             ImageIO.write(img, "png", file);
             Platform.runLater(() -> {
