@@ -632,25 +632,41 @@ public class Main extends Application {
     }
 
     private void doAssignMacro(Key k) {
-        MacroDialog dlg = new MacroDialog(ergodoxLayout);
-        dlg.show(k);
+        try {
+            MacroDialog dlg = new MacroDialog(ergodoxLayout);
+            dlg.show(k);
+        } catch (Exception e) {
+            showErrorMessage("Could not assign macro", e);
+        }
     }
 
     private void doAssingLayerToggle(Key k) {
-        AssignLayerToggleDialog dlg = new AssignLayerToggleDialog(ergodoxLayout);
-        dlg.show(k);
+        try {
+            AssignLayerToggleDialog dlg = new AssignLayerToggleDialog(ergodoxLayout);
+            dlg.show(k);
+        } catch (Exception e) {
+            showErrorMessage("could not assign layertoggle", e);
+        }
 
     }
 
     private void doAssignLT(Key k) {
-        AssignLTDialog dlg = new AssignLTDialog(ergodoxLayout);
-        dlg.show(k);
+        try {
+            AssignLTDialog dlg = new AssignLTDialog(ergodoxLayout);
+            dlg.show(k);
+        } catch (Exception e) {
+            showErrorMessage("Could not assign LT", e);
+        }
 
     }
 
     private void doAssignKey(Key k) {
-        AssignKeyDialog ak = new AssignKeyDialog(ergodoxLayout);
-        ak.show(k);
+        try {
+            AssignKeyDialog ak = new AssignKeyDialog(ergodoxLayout);
+            ak.show(k);
+        } catch (Exception e) {
+            showErrorMessage("could not assign key", e);
+        }
 
     }
 
