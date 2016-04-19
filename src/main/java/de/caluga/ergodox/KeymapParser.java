@@ -243,6 +243,7 @@ public class KeymapParser {
             Matcher mLTTypeMacro = LongPressAndTypeMacro.pattern.matcher(normalizedMacroContent);
             Matcher mHoldKeyMacro = HoldKeyMacro.pattern.matcher(normalizedMacroContent);
             Matcher mLayerToggleTypeMacro = LayerToggleTypeMacro.pattern.matcher(normalizedMacroContent);
+            Matcher mLayertoggleHoldMacro = LayerToggleAndHoldMacro.pattern.matcher(normalizedMacroContent);
             Macro macro;
             if (mTypingMacro.matches()) {
                 String typing = mTypingMacro.group(1);
@@ -306,6 +307,15 @@ public class KeymapParser {
                 }
                 macro = lt;
 
+            } else if (mLayertoggleHoldMacro.matches()) {
+                String layer = mLayertoggleHoldMacro.group(1);
+                String tm = mLayertoggleHoldMacro.group(2);
+                System.out.println("Layer toggle and hold macro. Layer " + layer);
+                LayerToggleAndHoldMacro lth = new LayerToggleAndHoldMacro();
+                lth.setName(macroName);
+                lth.setTimeout(Integer.valueOf(tm));
+                lth.setLayer(layer);
+                macro = lth;
             } else if (mLayerToggleMacro.matches()) {
                 System.out.println("Layer toggle macro: Layer " + mLayerToggleMacro.group(1));
                 LayerToggleMacro lm = new LayerToggleMacro();

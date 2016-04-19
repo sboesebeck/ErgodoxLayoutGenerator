@@ -186,6 +186,24 @@ public class KeymapWriter {
                 b.append("END);\n");
                 b.append("\t\t\t}\n" +
                         "\t\t}\n");
+            } else if (layout.getMacros().get(macroName) instanceof LayerToggleAndHoldMacro) {
+                LayerToggleAndHoldMacro lth = (LayerToggleAndHoldMacro) layout.getMacros().get(macroName);
+                b.append("if (record->event.pressed){\n" + "         start = timer_read();\n" + "         layer_state ^=(1<<")
+                        .append(lth.getLayer())
+                        .append(");\n")
+                        .append("         layer_state &=(1<<")
+                        .append(lth.getLayer()).append(");\n")
+                        .append(" } else {\n")
+                        .append("         if (timer_elapsed(start) > ")
+                        .append(lth.getTimeout())
+                        .append(") {\n")
+                        .append("                 layer_state^=(1<<")
+                        .append(lth.getLayer())
+                        .append(");\n").append("                 layer_state&=(1<<")
+                        .append(lth.getLayer())
+                        .append(");\n").append("         }\n")
+                        .append(" }\n")
+                        .append("return MACRO_NONE;\n");
             } else if (layout.getMacros().get(macroName) instanceof LayerToggleMacro) {
                 LayerToggleMacro lt = (LayerToggleMacro) layout.getMacros().get(macroName);
                 b.append(" if (record->event.pressed){\n" +

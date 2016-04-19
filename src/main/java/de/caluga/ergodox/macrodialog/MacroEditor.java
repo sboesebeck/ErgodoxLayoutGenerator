@@ -85,6 +85,7 @@ public class MacroEditor {
 
     private ErgodoxLayout layout;
     private ComboBox<String> layersCBX;
+    private CheckBox holdAndType;
 
     public MacroEditor(ErgodoxLayout l) {
         this(l, null);
@@ -257,6 +258,14 @@ public class MacroEditor {
                 layersCBX.getSelectionModel().select(ltt.getLayer());
                 timeoutCBX.getSelectionModel().select(ltt.getTimeout());
 
+            } else if (theMacro instanceof LayerToggleAndHoldMacro) {
+                layerToggleRB.setSelected(true);
+                showLayerToggle(content);
+                LayerToggleAndHoldMacro lth = (LayerToggleAndHoldMacro) this.theMacro;
+                layersCBX.getSelectionModel().select(lth.getLayer());
+                timeoutCBX.getSelectionModel().select(lth.getTimeout());
+                holdAndType.setSelected(true);
+                timeoutCBX.setVisible(true);
             } else if (theMacro instanceof LayerToggleMacro) {
                 layerToggleRB.setSelected(true);
                 showLayerToggle(content);
@@ -288,7 +297,6 @@ public class MacroEditor {
             macroContent1.setText(macronifyString(macroContent1.getText()));
         });
         content.add(btn, 2, 1);
-
 
     }
 
@@ -433,6 +441,14 @@ public class MacroEditor {
         layersCBX = createLayerCBX();
         content.add(new Label("layer:"), 0, 1);
         content.add(layersCBX, 1, 1);
+        holdAndType = new CheckBox("hold and type");
+        content.add(holdAndType, 0, 2);
+        timeoutCBX = createTimeoutCBX();
+        content.add(timeoutCBX, 1, 2);
+        timeoutCBX.setVisible(false);
+        holdAndType.addEventHandler(ActionEvent.ACTION, event -> {
+            timeoutCBX.setVisible(!timeoutCBX.isVisible());
+        });
     }
 
     private ComboBox<String> createLayerCBX() {
@@ -443,11 +459,21 @@ public class MacroEditor {
         return ret;
     }
 
-    private LayerToggleMacro getLayerToggleMacro() {
-        LayerToggleMacro lt = new LayerToggleMacro();
-        lt.setLayer(layersCBX.getSelectionModel().getSelectedItem());
-        lt.setName(nameTF.getText());
-        return lt;
+    private Macro getLayerToggleMacro() {
+        Macro ret;
+        if (holdAndType.isSelected()) {
+            LayerToggleAndHoldMacro lth = new LayerToggleAndHoldMacro();
+            lth.setLayer(layersCBX.getSelectionModel().getSelectedItem());
+            lth.setTimeout(timeoutCBX.getSelectionModel().getSelectedItem());
+            ret = lth;
+        } else {
+            LayerToggleMacro lt = new LayerToggleMacro();
+            lt.setLayer(layersCBX.getSelectionModel().getSelectedItem());
+            lt.setName(nameTF.getText());
+            ret = lt;
+        }
+        ret.setName(nameTF.getText());
+        return ret;
     }
 
     private void showTypeMacro(GridPane content) {
