@@ -80,30 +80,13 @@ public class KeymapWriter {
 
     public static void macroActionListToCString(StringBuilder b, List<MacroAction> actions) {
         for (MacroAction a : actions) {
-            switch (a.getAction()) {
-                case DOWN:
-                    b.append("D");
-                    break;
-                case UP:
-                    b.append("U");
-                    break;
-                case WAIT:
-                    b.append("W");
-                    break;
-                case TYPE:
-                    b.append("T");
-                    break;
-                default:
-                    throw new RuntimeException("Unknown action!");
-            }
+            b.append(a.getAction().name());
+
             b.append("(");
-            if (a.getAction().equals(MacroAction.Action.WAIT))
+            if (a.getAction().equals(MacroAction.Action.WAIT) || a.getAction().equals(MacroAction.Action.INTERVAL))
                 b.append(a.getWait());
             else {
-                if (!a.getCode().name().startsWith("KC_")) {
-                    System.err.println("Error: macro will not work, non-KC-Keycode! " + a.getCode().name());
-                }
-                b.append(a.getCode().name().substring(3));
+                b.append(a.getCode().name());
             }
             b.append(")");
             b.append(",");

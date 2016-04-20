@@ -96,19 +96,34 @@ public class KeymapParser {
             a.setAction(MacroAction.Action.DOWN);
             a.setCode(ErgodoxKeyCode.valueOf("KC_" + token.substring(2, token.length() - 1)));
 
+        } else if (token.startsWith("DOWN(")) {
+            a.setAction(MacroAction.Action.DOWN);
+            a.setCode(ErgodoxKeyCode.valueOf(token.substring(5, token.length() - 1)));
         } else if (token.startsWith("U(")) {
             a.setAction(MacroAction.Action.UP);
             a.setCode(ErgodoxKeyCode.valueOf("KC_" + token.substring(2, token.length() - 1)));
 
+        } else if (token.startsWith("UP(")) {
+            a.setAction(MacroAction.Action.UP);
+            a.setCode(ErgodoxKeyCode.valueOf(token.substring(3, token.length() - 1)));
         } else if (token.startsWith("T(")) {
             a.setAction(MacroAction.Action.TYPE);
             a.setCode(ErgodoxKeyCode.valueOf("KC_" + token.substring(2, token.length() - 1)));
+        } else if (token.startsWith("TYPE(")) {
+            a.setAction(MacroAction.Action.TYPE);
+            a.setCode(ErgodoxKeyCode.valueOf(token.substring(5, token.length() - 1)));
         } else if (token.startsWith("I(")) {
             a.setAction(MacroAction.Action.INTERVAL);
             a.setWait(Integer.parseInt(token.substring(2, token.length() - 1)));
+        } else if (token.startsWith("INTERVAL(")) {
+            a.setAction(MacroAction.Action.INTERVAL);
+            a.setWait(Integer.parseInt(token.substring(9, token.length() - 1)));
         } else if (token.startsWith("W(")) {
             a.setAction(MacroAction.Action.WAIT);
             a.setWait(Integer.parseInt(token.substring(2, token.length() - 1)));
+        } else if (token.startsWith("WAIT(")) {
+            a.setAction(MacroAction.Action.WAIT);
+            a.setWait(Integer.parseInt(token.substring(5, token.length() - 1)));
         } else {
             throw new RuntimeException("Cannot handle Macro action " + token);
         }

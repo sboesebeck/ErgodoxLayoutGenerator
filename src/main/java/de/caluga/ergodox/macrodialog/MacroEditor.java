@@ -184,7 +184,7 @@ public class MacroEditor {
 //        grid.add(layerCBX, 1, 1);
 
 // Enable/Disable login button depending on whether a username was entered.
-        Scene scene = new Scene(grid, 1000, 400);
+        Scene scene = new Scene(grid, 1000, 500);
 
 
         cancel.addEventHandler(ActionEvent.ACTION, event -> {
@@ -305,6 +305,7 @@ public class MacroEditor {
         ret.setTimeout(timeoutCBX.getSelectionModel().getSelectedItem());
         ret.setActionsOnType(KeymapParser.parseActionList(macroContent1.getText()));
         ret.setLayer(layersCBX.getSelectionModel().getSelectedItem());
+        ret.setName(nameTF.getText());
         return ret;
     }
 
@@ -381,9 +382,9 @@ public class MacroEditor {
 
         ComboBox<String> validKeyCodesCbx = new ComboBox<>();
         for (ErgodoxKeyCode c : ErgodoxKeyCode.values()) {
-            if (c.name().startsWith("KC_")) {
+//            if (c.name().startsWith("KC_")) {
                 validKeyCodesCbx.getItems().add(c.name());
-            }
+//            }
         }
         ComboBoxAutocompleter<String> autocompleter = new ComboBoxAutocompleter<>(validKeyCodesCbx);
 
@@ -398,19 +399,19 @@ public class MacroEditor {
         Button insert = new Button("T");
         insert.addEventHandler(ActionEvent.ACTION, event -> {
             if (focusedTF != null && validKeyCodesCbx.getSelectionModel().getSelectedItem() != null) {
-                focusedTF.insertText(focusedTF.getCaretPosition(), "T(" + validKeyCodesCbx.getSelectionModel().getSelectedItem().substring(3) + ")");//no KC_ prefix
+                focusedTF.insertText(focusedTF.getCaretPosition(), "TYPE(" + validKeyCodesCbx.getSelectionModel().getSelectedItem().substring(3) + ")");//no KC_ prefix
             }
         });
         Button down = new Button("D");
         down.addEventHandler(ActionEvent.ACTION, event -> {
             if (focusedTF != null && validKeyCodesCbx.getSelectionModel().getSelectedItem() != null) {
-                focusedTF.insertText(focusedTF.getCaretPosition(), "D(" + validKeyCodesCbx.getSelectionModel().getSelectedItem().substring(3) + ")");//no KC_ prefix
+                focusedTF.insertText(focusedTF.getCaretPosition(), "DOWN(" + validKeyCodesCbx.getSelectionModel().getSelectedItem().substring(3) + ")");//no KC_ prefix
             }
         });
         Button up = new Button("U");
         up.addEventHandler(ActionEvent.ACTION, event -> {
             if (focusedTF != null && validKeyCodesCbx.getSelectionModel().getSelectedItem() != null) {
-                focusedTF.insertText(focusedTF.getCaretPosition(), "U(" + validKeyCodesCbx.getSelectionModel().getSelectedItem().substring(3) + ")");//no KC_ prefix
+                focusedTF.insertText(focusedTF.getCaretPosition(), "UP(" + validKeyCodesCbx.getSelectionModel().getSelectedItem().substring(3) + ")");//no KC_ prefix
             }
         });
         FlowPane pn = new FlowPane();
@@ -420,7 +421,7 @@ public class MacroEditor {
         pn.getChildren().add(validKeyCodesCbx);
         content.add(pn, 2, 1);
 
-        validKeyCodesCbx.getEditor().setText("KC_");
+//        validKeyCodesCbx.getEditor().setText("KC_");
 //        content.add(insert,2,1);
 
         macroContent1.focusedProperty().addListener((observable, oldValue, newValue) -> {
@@ -430,7 +431,7 @@ public class MacroEditor {
         macroContent2.focusedProperty().addListener((observable, oldValue, newValue) -> {
             focusedTF = macroContent2;
         });
-        content.add(new Label("Long press macro will issue different keys, depending on how long the key is pressed\nAttention: you need to 'undo' your held keys in the type phase.\nthis means, if you want to do SHIFT when held, type S if not, your config will look like this:\nholding key: D(LSFT)\ntyping part: U(LSFT),T(S)"), 0, 4, 3, 1);
+        content.add(new Label("Long press macro will issue different keys, depending on how long the key is pressed\nAttention: you need to 'undo' your held keys in the type phase.\nthis means, if you want to do SHIFT when held, type S if not, your config will look like this:\nholding key: DOWN(KC_LSFT)\ntyping part: U(KC_LSFT),TYPE(KC_S)"), 0, 4, 3, 1);
 
 
     }
@@ -490,7 +491,7 @@ public class MacroEditor {
             String newTxt = macronifyString(txt);
             macroContent1.setText(newTxt);
         });
-        content.add(new Label("Description: Keycodes in Macros do not have the KC_PREFIX, hence only KC_KEYCODES work\nD(KEYCODE) - DOWN key\nU(KEYCODE) - Release key\nT(KEYCODE) - Type key\nW(MILLIES) - wait milliseconds"), 0, 3, 2, 1);
+        content.add(new Label("Description: DOWN(KEYCODE) - simulate pressing key\nUP(KEYCODE) - Release key\nTYPE(KEYCODE) - Type key\nW(MILLIES) - wait milliseconds\nI(MILLIES) - set Interval to ms\nAttention: when adding a keycode that actually is a combination of modifier+key, it will not work in the macro!"), 0, 3, 2, 1);
 
     }
 
@@ -543,63 +544,63 @@ public class MacroEditor {
             char c = txt.charAt(i);
             if (Character.isAlphabetic(c) && Character.isUpperCase(c)) {
                 if (!shift) {
-                    b.append("D(LSFT),");
+                    b.append("DOWN(KC_LSFT),");
                 }
-                b.append("T(").append(Character.toString(c)).append(")");
+                b.append("TYPE(KC_").append(Character.toString(c)).append(")");
                 shift = true;
             } else if (Character.isAlphabetic(c) && !Character.isUpperCase(c)) {
                 if (shift) {
-                    b.append("U(LSFT),");
+                    b.append("UP(KC_LSFT),");
                 }
-                b.append("T(").append(Character.toString(c).toUpperCase()).append(")");
+                b.append("TYPE(").append("KC_").append(Character.toString(c).toUpperCase()).append(")");
                 shift = false;
             } else if (Character.isDigit(c)) {
                 if (shift) {
-                    b.append("U(LSFT),");
+                    b.append("UP(KC_LSFT),");
                 }
                 shift = false;
-                b.append("T(" + Character.toString(c) + ")");
+                b.append("TYPE(KC_" + Character.toString(c) + ")");
             } else if (Character.isSpaceChar(c)) {
                 if (shift) {
-                    b.append("U(LSFT),");
+                    b.append("UP(KC_LSFT),");
                 }
                 shift = false;
-                b.append("T(SPC)");
+                b.append("TYPE(KC_SPC)");
             } else {
                 if (shift) {
-                    b.append("U(LSFT),");
+                    b.append("UP(KC_LSFT),");
                 }
                 shift = false;
                 switch (c) {
                     case '!':
-                        b.append("T(EXLM)");
+                        b.append("TYPE(KC_EXLM)");
                         break;
                     case ':':
-                        b.append("T(COLN)");
+                        b.append("TYPE(KC_COLN)");
                         break;
                     case '#':
-                        b.append("T(HASH)");
+                        b.append("TYPE(KC_HASH)");
                         break;
                     case ';':
-                        b.append("T(SCLN)");
+                        b.append("TYPE(KC_SCLN)");
                         break;
                     case '$':
-                        b.append("T(DLR)");
+                        b.append("TYPE(KC_DLR)");
                         break;
                     case '-':
-                        b.append("T(MINS)");
+                        b.append("TYPE(KC_MINS)");
                         break;
                     case '(':
-                        b.append("T(LBRC)");
+                        b.append("TYPE(KC_LBRC)");
                         break;
                     case ')':
-                        b.append("T(RBRC)");
+                        b.append("TYPE(KC_RBRC)");
                         break;
                     case '{':
-                        b.append("T(LCBRK)");
+                        b.append("TYPE(KC_LCBRK)");
                         break;
                     case '}':
-                        b.append("T(RCBRK)");
+                        b.append("TYPE(KC_RCBRK)");
                         break;
                     default:
                         b.append("?");
