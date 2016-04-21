@@ -19,49 +19,61 @@ or toggle a certain layer.
  And: Even if there is some kind of Macro support possible, it will never be the same as coding it yourself. Although it
  might be possible to have that done also in the _ErgodoxLayoutGenerator_, this will still be limited in functionality.
 
- ## Documentation
+## running it
 
- When starting the program, it will show an empty ErgoDox (or ErgoDox-EZ in that respect)
- layout.
- When you click on a key representation, it will be marked. Rightclicking on it will then show a context menu where you can either assign a key, a macro or similar function
- when doubleclicking you will either edit the current assignment or assign a key.
+Prerequisites: have a proper jdk or jre (Java Version) installed. This works best with the official oracle JDK, but openjdk also work. You need to install the jfx support for openjdk in oder to get it to run. On ubuntu for example you need to run `apt-get install openjfx`
 
- When you're finished with your layout, you can easily store it as `keamap.c` file. You need to specify a _directory_ where you want to store it.
- The directory should reside in the `qmk-sourcedir`, in order to be able to be compileable.
+If java is installed and available, you can download a release from this github page (see under releases) and execute the jar by eithter clicking on it or - if you want to use the commandline - run it with `java -jar ergodoxlayoutgenerator-1.0RC2.jar` 
 
- There is a compile button, where you can have your keymap compiled - do not forget to save your changes before trying to compile.
+## compiling it
 
- You can also open an existing keymap file. You should sett the QMK-Sourcedir in order to find the keymap more easily.
- This setting will be stored for the next start, so you can easily re-open any keymap you worked on.
+just clone the whole project onto your local drive and then run `mvn install` in the directory. The prerequisites are the same as for running it, but in this case you'd need to have a JDK installed, a JRE would not be working, as it does not inculde a compiler.
 
- When you click on the Button "open", it will show you the current available layouts in your qmk-sourcedir. You need only choose
- the directory in which the `keymap.c` file is located.
+In addition to that you need to have maven installed.
 
- After the keymap was parsed and opened you can now see the layout of `BASE`. The parsing only works properly, if all layers do have
- a name (Usually done using `#define` at the top of the file). If that is missing, the parsing might (or will) fail.
+## Documentation
 
- You can switch between your layers using the topleft combobox. There all available layers should be shown.
- when you change the layer, the gui is updated, you will see the layout accordingly.
+The documentation is available at <https://boesebeck.name/2016/04/16/ergodoxlayoutgenerator-documentation/>
 
- The different colors do have a meaning, the legend of them is shown just below the keys. Some of those do have two lines of "text"
- the description in the legend is then according to the line.
+In short:
 
- The buttn "save" does not work now, but would store your changes to the `keymap.c` file. The button "create" does not work
- yet either. But it will create a complete new layout in the qmk sourcedir.
+- when opening the ELG, it will show an empty layout
+- you should set the QMK-Sourcedir in order to be able to compile your layout. You should also store your layout at the proper directory _within_ the qmk-sources. Otherwise, the compile will not work
+- use open to choose a layout from the existing ones in the QMK-Directory. You need to choose the directory, all layout files are named `keymap.c`
+- the reopen button would read in the layout you opened last or saved last
+- save will save your layout. Again, you need to chosse a directory! If you want to create a new layout, create a new directory with the name for your layout in the qmk source. If you set the sourcedir properly, the dialog will start in the right place
+- savePng will store a documenting PNG of your layout. Showing all layers an macros. Kind of a "Cheat sheet"
+- compile - this will compile your layout. Be careful that you saved before that! If compilation is successful, you will be asked if you want to move the resulting `.hex` file to the "proper" location - which is beside the keymap.c file
+- create will create a new empty layout
 
- The button "save PNG" renders an image with all the layers of the currently open keymap and stores it to the given file.
- By default it is called "KEYMAPNAME_highres.png" (where KEYMAPNAME is replaced by the name of your keymap)
- and would be stored in the keymap directory (as documentation).
+**Caveat** Be careful: there are not any "security" questions asked. Meaning, if you hit the create button, you will lose everything that is not saved! No questions asked yet!
 
+Klicking on a key representation with the right mousebutton will bring up a menu where you can assign different actions to the corresponding key. 
 
-documentation is also available at <https://boesebeck.name/2016/04/16/ergodoxlayoutgenerator-documentation/>
+- Assign key - just a simple keypress
+- Assign Layertoggle - pressing the key will switch to a different layer, typing it again will switch back
+- Assign Layertoggle / Type - when holding the key, switch to a layer, when typing or tapping it just a normal key
+- Assign Macro
+
+With Macros you can significantly improve things you can do with your keyboard. But of course, the ELG cannot do _everything_ you could do by programming c-code, but it does solve some very common features with these macro types:
+
+- type macro: will type a series of keys when the key this macro is assigned to is pressed.
+- long press type macro: when you hold the key there will be a different set of actions then when typing. Just be careful: you need to release the keys during hold at the end of the type action list!
+- hold key makro: well, do something when holding the key, and when releasing it again
+- custom macro: here you could actually add c-code
+- layergoggle macro: toggle between layers. this type also supports: holding key, switch to the layer as long the key is held, tapping the key, just toggle the layer
+- layertoggle type macro: when the key is tapped, a normal macro is executed, when  the key is held, a layer switch takes place
+
+You might ask, why are there some macros exactly copying the standard features, like LT()?
+Thing is, that LT does not work good with combinations of keys. For example, you want to switch to a layer, if the key is held, but want it to type SHIFT-1 (for !) when typed. This will not work without the macro.
+
 
 ## Disclaimer
 
- This code is in a very early development stage, more like a prototype and proof of concept. The code is still in prototype
- level and not really "good". But it seems to work for now.
+ Use this code at your own risk! If the resulting keymap.c does not work as expected or is - what I think is not possible, but anyway - harm your device, the author of this tool is not responsible.
 
- Also this Softare was not heavily tested on different machines, different OS. If you find an error, plese leave an issue on the github page.
+This tool was _not_ heavily tested on different environments, if you find any bugs, please consider posting them on the project page on github. 
+
 
 ## Copyright
  Copyright © 2007 Free Software Foundation, Inc. <http://fsf.org/>
