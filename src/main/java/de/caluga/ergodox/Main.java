@@ -190,6 +190,137 @@ public class Main extends Application {
         }
     }
 
+    public static String getKeyDisplayText(String kval, Map<String, Macro> macros) {
+        String ret = "";
+        if (kval.equals("KC_TRNS")) {
+            ret = "";
+        } else if (kval.startsWith("TG(")) {
+            ret = kval.substring(3).replaceAll("\\)", "");
+        } else if (kval.startsWith("ALL_T(")) {
+            String s = kval.substring(6).replaceAll("\\)", "");
+            s = getKeyDisplayName(s.substring(s.lastIndexOf('_') + 1));
+            ret = s + "\nHyper";
+        } else if (kval.startsWith("MEH_T(")) {
+            String s = kval.substring(6).replaceAll("\\)", "");
+            s = getKeyDisplayName(s.substring(s.lastIndexOf('_') + 1));
+            ret = s + "\nMeh";
+        } else if (kval.startsWith("ALT_T(")) {
+            String s = kval.substring(6).replaceAll("\\)", "");
+            s = getKeyDisplayName(s.substring(s.lastIndexOf('_') + 1));
+            ret = s + "\nALT";
+        } else if (kval.startsWith("CTL_T(")) {
+            String s = kval.substring(6).replaceAll("\\)", "");
+            s = getKeyDisplayName(s.substring(s.lastIndexOf('_') + 1));
+            ret = s + "\nCtrl";
+        } else if (kval.startsWith("GUI_T(")) {
+            String s = kval.substring(6).replaceAll("\\)", "");
+            s = getKeyDisplayName(s.substring(s.lastIndexOf('_') + 1));
+            ret = s + "\nCMD";
+        } else if (kval.startsWith("LT(")) {
+            String s = kval.substring(3).replaceAll("\\)", "");
+            String lt[] = s.split(",");
+            String layer = lt[0];
+            String key = lt[1];
+            ret = getKeyDisplayName(key.substring(key.lastIndexOf('_') + 1)) + "\n" + layer;
+        } else if (kval.startsWith("LGUI(")) {
+            String s = kval.substring(5).replaceAll("\\)", "");
+            ret = "CMD+" + getKeyDisplayName(s.substring(s.lastIndexOf('_') + 1));
+        } else if (kval.startsWith("LCTL(")) {
+            String s = kval.substring(5).replaceAll("\\)", "");
+            ret = "Ctrl+" + getKeyDisplayName(s.substring(s.lastIndexOf('_') + 1));
+        } else if (kval.startsWith("LALT(")) {
+            String s = kval.substring(5).replaceAll("\\)", "");
+            ret = "ALT+" + getKeyDisplayName(s.substring(s.lastIndexOf('_') + 1));
+        } else if (kval.startsWith("LSFT(")) {
+            String s = kval.substring(5).replaceAll("\\)", "");
+            ret = "Shift+" + getKeyDisplayName(s.substring(s.lastIndexOf('_') + 1));
+        } else if (kval.startsWith("M(")) {
+            ret = kval.substring(2);
+            ret = ret.substring(0, ret.length() - 1);
+            Macro macro = macros.get(ret);
+            if (macro != null) ret = macro.getMacroGuiText();
+            ret = getKeyDisplayName(ret);
+        } else if (!kval.contains("_") || kval.contains("(")) {
+            ret = kval;
+        } else {
+            try {
+                ErgodoxKeyCode k = ErgodoxKeyCode.valueOf(kval.trim());
+                if (k == null) {
+                    //error
+                    ret = "invalid";
+                } else {
+                    ret = getKeyDisplayName(kval.substring(kval.lastIndexOf('_') + 1));
+                }
+            } catch (IllegalArgumentException e) {
+                ret = "invalid";
+            }
+        }
+
+        return ret;
+    }
+
+    private static String getKeyDisplayName(String ret) {
+        ret = ret.replaceAll("LSFT", "Shift")
+                .replaceAll("RSFT", "Shift")
+                .replaceAll("LSHIFT", "Shift")
+                .replaceAll("RSHIFT", "Shift")
+                .replaceAll("KC_NO", "None")
+                .replaceAll("KC_", "");
+        ret = ret.replaceAll("^AE", "Ä");
+        ret = ret.replaceAll("^OE", "Ö");
+        ret = ret.replaceAll("^UE", "Ü");
+        ret = ret.replaceAll("^SS", "ß");
+        ret = ret.replaceAll("^LESS", "<");
+        ret = ret.replaceAll("^MORE", ">");
+        ret = ret.replaceAll("^PIPE", "|");
+        ret = ret.replaceAll("^TILDE", "~");
+        ret = ret.replaceAll("^TILD", "~");
+        ret = ret.replaceAll("^EXLM", "!");
+        ret = ret.replaceAll("^CIRC", "°");
+        ret = ret.replaceAll("^DLR", "\\$");
+        ret = ret.replaceAll("^QST", "?");
+        ret = ret.replaceAll("^DOT", ".");
+        ret = ret.replaceAll("^COMMA", ",");
+        ret = ret.replaceAll("^COMM", ",");
+        ret = ret.replaceAll("^SLSH", "/");
+        ret = ret.replaceAll("^BSLS", "\\\\");
+        ret = ret.replaceAll("^PERC", "%");
+        ret = ret.replaceAll("^SLASH", "/");
+        ret = ret.replaceAll("^HASH", "#");
+        ret = ret.replaceAll("^LPRN", "(");
+        ret = ret.replaceAll("^RPRN", ")");
+        ret = ret.replaceAll("^PLUS", "+");
+        ret = ret.replaceAll("^COLN", ":");
+        ret = ret.replaceAll("^SCLN", ";");
+        ret = ret.replaceAll("^MINS", "-");
+        ret = ret.replaceAll("^EQL", "=");
+        ret = ret.replaceAll("^LCBR", "{");
+        ret = ret.replaceAll("^RCBR", "}");
+        ret = ret.replaceAll("^LBRC", "[");
+        ret = ret.replaceAll("^RBRC", "]");
+        ret = ret.replaceAll("^UNDS", "_");
+        ret = ret.replaceAll("^AT", "@");
+        ret = ret.replaceAll("^EURO", "€");
+        ret = ret.replaceAll("^AMPR", "&");
+        ret = ret.replaceAll("^PARA", "§");
+        ret = ret.replaceAll("^DQUOT", "\"");
+        ret = ret.replaceAll("^QUOT", "'");
+        ret = ret.replaceAll("^ASTR", "*");
+        ret = ret.replaceAll("^GRV", "`");
+        ret = ret.replaceAll("^ACCUT", "");
+        ret = ret.replaceAll("^SQ2", "²");
+        ret = ret.replaceAll("^SQ3", "³");
+        ret = ret.replaceAll("LCTL", "Ctrl");
+        ret = ret.replaceAll("LCTRL", "Ctrl");
+        ret = ret.replaceAll("LALT", "Alt");
+        ret = ret.replaceAll("RALT", "Alt");
+
+        //osx vs. windows vs linux?
+        ret = ret.replaceAll("LGUI", "Cmd");
+        ret = ret.replaceAll("RGUI", "Cmd");
+        return ret;
+    }
+
     public void start(Stage primaryStage) throws Exception {
 
 
@@ -725,7 +856,6 @@ public class Main extends Application {
         }
     }
 
-
     private void showLongContent(String msg, String longContent) {
         Alert alert = new Alert(Alert.AlertType.INFORMATION);
         alert.setTitle("Information");
@@ -980,7 +1110,6 @@ public class Main extends Application {
         saveConfig();
     }
 
-
     public void layout() {
 
         int row = 0;
@@ -1014,7 +1143,7 @@ public class Main extends Application {
                 b.setInnerColor(bgcol.brighter());
                 b.setOuterColor(bgcol);
 //                b.backgroundProperty().setValue(new Background(new BackgroundFill(bgcol, new CornerRadii(5), Insets.EMPTY)));
-                b.setText(getKeyDisplayText(kval));
+                b.setText(getKeyDisplayText(kval, ergodoxLayout.getMacros()));
 //                b.setFont(Font.font(8));
 //                b.setAlignment(Pos.CENTER);
 //                b.setTextAlignment(TextAlignment.CENTER);
@@ -1108,7 +1237,6 @@ public class Main extends Application {
 //        canvas.getChildren().add();
     }
 
-
     private String getKeyDescription(String kval) {
         if (kval == null) return "";
         String ret = "";
@@ -1177,137 +1305,6 @@ public class Main extends Application {
             }
         }
 
-        return ret;
-    }
-
-    private String getKeyDisplayText(String kval) {
-        String ret = "";
-        if (kval.equals("KC_TRNS")) {
-            ret = "";
-        } else if (kval.startsWith("TG(")) {
-            ret = kval.substring(3).replaceAll("\\)", "");
-        } else if (kval.startsWith("ALL_T(")) {
-            String s = kval.substring(6).replaceAll("\\)", "");
-            s = getKeyDisplayName(s.substring(s.lastIndexOf('_') + 1));
-            ret = s + "\nHyper";
-        } else if (kval.startsWith("MEH_T(")) {
-            String s = kval.substring(6).replaceAll("\\)", "");
-            s = getKeyDisplayName(s.substring(s.lastIndexOf('_') + 1));
-            ret = s + "\nMeh";
-        } else if (kval.startsWith("ALT_T(")) {
-            String s = kval.substring(6).replaceAll("\\)", "");
-            s = getKeyDisplayName(s.substring(s.lastIndexOf('_') + 1));
-            ret = s + "\nALT";
-        } else if (kval.startsWith("CTL_T(")) {
-            String s = kval.substring(6).replaceAll("\\)", "");
-            s = getKeyDisplayName(s.substring(s.lastIndexOf('_') + 1));
-            ret = s + "\nCtrl";
-        } else if (kval.startsWith("GUI_T(")) {
-            String s = kval.substring(6).replaceAll("\\)", "");
-            s = getKeyDisplayName(s.substring(s.lastIndexOf('_') + 1));
-            ret = s + "\nCMD";
-        } else if (kval.startsWith("LT(")) {
-            String s = kval.substring(3).replaceAll("\\)", "");
-            String lt[] = s.split(",");
-            String layer = lt[0];
-            String key = lt[1];
-            ret = getKeyDisplayName(key.substring(key.lastIndexOf('_') + 1)) + "\n" + layer;
-        } else if (kval.startsWith("LGUI(")) {
-            String s = kval.substring(5).replaceAll("\\)", "");
-            ret = "CMD+" + getKeyDisplayName(s.substring(s.lastIndexOf('_') + 1));
-        } else if (kval.startsWith("LCTL(")) {
-            String s = kval.substring(5).replaceAll("\\)", "");
-            ret = "Ctrl+" + getKeyDisplayName(s.substring(s.lastIndexOf('_') + 1));
-        } else if (kval.startsWith("LALT(")) {
-            String s = kval.substring(5).replaceAll("\\)", "");
-            ret = "ALT+" + getKeyDisplayName(s.substring(s.lastIndexOf('_') + 1));
-        } else if (kval.startsWith("LSFT(")) {
-            String s = kval.substring(5).replaceAll("\\)", "");
-            ret = "Shift+" + getKeyDisplayName(s.substring(s.lastIndexOf('_') + 1));
-        } else if (kval.startsWith("M(")) {
-            ret = kval.substring(2);
-            ret = ret.substring(0, ret.length() - 1);
-            Macro macro = ergodoxLayout.getMacros().get(ret);
-            if (macro != null) ret = macro.getMacroGuiText();
-            ret = getKeyDisplayName(ret);
-        } else if (!kval.contains("_") || kval.contains("(")) {
-            ret = kval;
-        } else {
-            try {
-                ErgodoxKeyCode k = ErgodoxKeyCode.valueOf(kval.trim());
-                if (k == null) {
-                    //error
-                    ret = "invalid";
-                } else {
-                    ret = getKeyDisplayName(kval.substring(kval.lastIndexOf('_') + 1));
-                }
-            } catch (IllegalArgumentException e) {
-                ret = "invalid";
-            }
-        }
-
-        return ret;
-    }
-
-    private String getKeyDisplayName(String ret) {
-        ret = ret.replaceAll("LSFT", "Shift")
-                .replaceAll("RSFT", "Shift")
-                .replaceAll("LSHIFT", "Shift")
-                .replaceAll("RSHIFT", "Shift")
-                .replaceAll("KC_NO", "None")
-                .replaceAll("KC_", "");
-        ret = ret.replaceAll("^AE", "Ä");
-        ret = ret.replaceAll("^OE", "Ö");
-        ret = ret.replaceAll("^UE", "Ü");
-        ret = ret.replaceAll("^SS", "ß");
-        ret = ret.replaceAll("^LESS", "<");
-        ret = ret.replaceAll("^MORE", ">");
-        ret = ret.replaceAll("^PIPE", "|");
-        ret = ret.replaceAll("^TILDE", "~");
-        ret = ret.replaceAll("^TILD", "~");
-        ret = ret.replaceAll("^EXLM", "!");
-        ret = ret.replaceAll("^CIRC", "°");
-        ret = ret.replaceAll("^DLR", "\\$");
-        ret = ret.replaceAll("^QST", "?");
-        ret = ret.replaceAll("^DOT", ".");
-        ret = ret.replaceAll("^COMMA", ",");
-        ret = ret.replaceAll("^COMM", ",");
-        ret = ret.replaceAll("^SLSH", "/");
-        ret = ret.replaceAll("^BSLS", "\\\\");
-        ret = ret.replaceAll("^PERC", "%");
-        ret = ret.replaceAll("^SLASH", "/");
-        ret = ret.replaceAll("^HASH", "#");
-        ret = ret.replaceAll("^LPRN", "(");
-        ret = ret.replaceAll("^RPRN", ")");
-        ret = ret.replaceAll("^PLUS", "+");
-        ret = ret.replaceAll("^COLN", ":");
-        ret = ret.replaceAll("^SCLN", ";");
-        ret = ret.replaceAll("^MINS", "-");
-        ret = ret.replaceAll("^EQL", "=");
-        ret = ret.replaceAll("^LCBR", "{");
-        ret = ret.replaceAll("^RCBR", "}");
-        ret = ret.replaceAll("^LBRC", "[");
-        ret = ret.replaceAll("^RBRC", "]");
-        ret = ret.replaceAll("^UNDS", "_");
-        ret = ret.replaceAll("^AT", "@");
-        ret = ret.replaceAll("^EURO", "€");
-        ret = ret.replaceAll("^AMPR", "&");
-        ret = ret.replaceAll("^PARA", "§");
-        ret = ret.replaceAll("^DQUOT", "\"");
-        ret = ret.replaceAll("^QUOT", "'");
-        ret = ret.replaceAll("^ASTR", "*");
-        ret = ret.replaceAll("^GRV", "`");
-        ret = ret.replaceAll("^ACCUT", "");
-        ret = ret.replaceAll("^SQ2", "²");
-        ret = ret.replaceAll("^SQ3", "³");
-        ret = ret.replaceAll("LCTL", "Ctrl");
-        ret = ret.replaceAll("LCTRL", "Ctrl");
-        ret = ret.replaceAll("LALT", "Alt");
-        ret = ret.replaceAll("RALT", "Alt");
-
-        //osx vs. windows vs linux?
-        ret = ret.replaceAll("LGUI", "Cmd");
-        ret = ret.replaceAll("RGUI", "Cmd");
         return ret;
     }
 }

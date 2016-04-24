@@ -201,6 +201,33 @@ public class KeymapWriter {
         }
         model.put("macros", macroContentByName);
 
+        //generate ascii legend
+        StringBuilder asciiLegend = new StringBuilder();
+
+        Map<String, String> legendByName = new HashMap<>();
+
+        for (String lName : layout.getLayers().keySet()) {
+            ErgodoxLayoutLayer l = layout.getLayers().get(lName);
+            int maxLen = 0;
+            for (Key k : l.getLayout()) {
+                String keyDisplayText = Main.getKeyDisplayText(k.getValue(), layout.getMacros());
+                if (keyDisplayText.length() > maxLen) maxLen = keyDisplayText.length();
+            }
+            maxLen += 2; //space left and right
+            int row = 0;
+            int rowidx = 0;
+            for (int idx = 0; idx < l.getLayout().size() / 2; idx++, rowidx++) {
+                if (rowidx >= l.getRowLength().get(row)) {
+                    row++;
+                    rowidx = 0;
+                    asciiLegend.append("\n");
+                    asciiLegend.append("---------------------------------------");
+                }
+
+                asciiLegend.append("");
+            }
+        }
+
         template.process(model, new FileWriter(to));
     }
 
