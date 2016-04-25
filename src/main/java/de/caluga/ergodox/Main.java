@@ -721,20 +721,7 @@ public class Main extends Application {
             wr.write(l);
             wr.write("\n");
         }
-        int i = 0;
-        while (p.isAlive()) {
-            Thread.sleep(1000);
-            i++;
-
-            if (i > 10) {
-                System.out.println("Killing process...");
-                p.destroy();
-            }
-            if (i > 20) {
-                System.out.println("Force quitting process...");
-                p.destroyForcibly();
-            }
-        }
+        p.waitFor();
         return p.exitValue();
 
 
