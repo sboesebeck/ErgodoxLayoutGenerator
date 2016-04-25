@@ -1097,7 +1097,7 @@ public class Main extends Application {
     private void readKeymapFile(Stage primaryStage, File selected) throws Exception {
         try {
             KeymapParser parser = new KeymapParser();
-            ergodoxLayout = parser.parse(selected.getAbsolutePath() + "/keymap.c");
+            ergodoxLayout = parser.parse(selected.getAbsolutePath());
             layerCombo.getItems().clear();
             for (String k : ergodoxLayout.getLayers().keySet()) {
                 layerCombo.getItems().add(k);
@@ -1108,7 +1108,7 @@ public class Main extends Application {
 
             Platform.runLater(() -> layout());
             primaryStage.setTitle(selected.getName());
-            currentKeymap = selected.getName();
+            currentKeymap = selected.getParentFile().getName();
         } catch (Exception e) {
             showErrorMessage("Could not parse keymap file", e);
         }
