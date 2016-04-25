@@ -726,8 +726,14 @@ public class Main extends Application {
             Thread.sleep(1000);
             i++;
 
-            if (i > 10) p.destroy();
-            if (i > 20) p.destroyForcibly();
+            if (i > 10) {
+                System.out.println("Killing process...");
+                p.destroy();
+            }
+            if (i > 20) {
+                System.out.println("Force quitting process...");
+                p.destroyForcibly();
+            }
         }
         return p.exitValue();
 
