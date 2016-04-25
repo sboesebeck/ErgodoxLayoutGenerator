@@ -721,6 +721,14 @@ public class Main extends Application {
             wr.write(l);
             wr.write("\n");
         }
+        int i = 0;
+        while (p.isAlive()) {
+            Thread.sleep(1000);
+            i++;
+
+            if (i > 10) p.destroy();
+            if (i > 20) p.destroyForcibly();
+        }
         return p.exitValue();
 
 
