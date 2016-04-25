@@ -823,31 +823,53 @@ public class Main extends Application {
 
     public void saveKeymap() {
         try {
-            DirectoryChooser fc = new DirectoryChooser();
-            if (qmkSourceDir == null) {
-                fc.setInitialDirectory(new File(System.getProperty("user.home")));
-            } else {
-                fc.setInitialDirectory(new File(qmkSourceDir.getPath() + "/keyboard/ergodox_ez/keymaps"));
+            FileChooser fc = new FileChooser();
+            File startFile = new File(qmkSourceDir.getPath() + "/keyboard/ergodox_ez/keymaps/" + currentKeymap + "/keymap.c");
+            if (!startFile.exists()) {
+                startFile = new File(currentKeymap);
             }
-            fc.setTitle("Choose ergodox-keymap directory");
+            if (!startFile.exists()) {
+                startFile = new File(qmkSourceDir.getPath() + "/keyboard/ergodox_ez/keymaps");
+            }
+            if (startFile.isDirectory()) {
+                fc.setInitialDirectory(startFile);
 
-            File selected = fc.showDialog(null);
+            } else {
+                fc.setInitialDirectory(startFile.getParentFile());
+            }
+            fc.setInitialFileName("keymap.c");
+
+
+            File selected = fc.showSaveDialog(null);
             if (selected == null) return;
 
-            if (qmkSourceDir.getAbsolutePath() != null && !selected.getAbsolutePath().startsWith(qmkSourceDir.getAbsolutePath())) {
-                Alert a = new Alert(Alert.AlertType.CONFIRMATION);
+            if (!selected.getAbsolutePath().startsWith(qmkSourceDir.getAbsolutePath())) {
+                Alert a = new Alert(Alert.AlertType.CONFIRMATION, "", ButtonType.YES, ButtonType.NO);
                 a.setTitle("Warning");
                 a.setContentText("Directory is not within the QMK-Source - you won't be able to compile it. Proceed?");
                 a.setHeaderText("Directory location");
 
                 Optional<ButtonType> result = a.showAndWait();
-                if (result.get() != ButtonType.OK) {
+                if (result.get() != ButtonType.YES) {
+                    saveKeymap();
+                    return;
+                }
+            }
+            if (!selected.getName().equals("keymap.c")) {
+                Alert a = new Alert(Alert.AlertType.WARNING, "", ButtonType.YES, ButtonType.NO);
+                a.setTitle("Warning");
+                a.setContentText("File is not named keymap.c - you won't be able to compile. Proceed?");
+                a.setHeaderText("Filename not ok");
+
+                Optional<ButtonType> result = a.showAndWait();
+                if (result.get() != ButtonType.YES) {
+                    saveKeymap();
                     return;
                 }
             }
 
             KeymapWriter writer = new KeymapWriter();
-            writer.writeKeymapFile(ergodoxLayout, new File(selected.getAbsolutePath() + "/keymap.c"));
+            writer.writeKeymapFile(ergodoxLayout, new File(selected.getAbsolutePath()));
 
             applicationSettings.setProperty(lastOpenedFile, selected.getAbsolutePath());
             saveConfig();
