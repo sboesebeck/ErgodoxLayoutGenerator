@@ -717,14 +717,11 @@ public class Main extends Application {
                 BufferedReader br = new BufferedReader(new InputStreamReader(p.getErrorStream()));
                 try {
                     while ((l = br.readLine()) != null) {
-
                         wr.write(l);
                         wr.write("\n");
                         System.out.println(l);
-
                     }
                 } catch (IOException e) {
-                    //TODO: Implement Handling
                     throw new RuntimeException(e);
                 }
             }
