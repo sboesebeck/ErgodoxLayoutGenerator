@@ -192,6 +192,7 @@ public class Main extends Application {
 
     public static String getKeyDisplayText(String kval, Map<String, Macro> macros) {
         String ret = "";
+        if (kval == null) return "";
         if (kval.equals("KC_TRNS")) {
             ret = "";
         } else if (kval.startsWith("TG(")) {

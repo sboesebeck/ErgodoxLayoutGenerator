@@ -15,6 +15,15 @@
 #include "keymap_extras/keymap_spanish.h"
 #include "keymap_extras/keymap_bepo.h"
 
+
+/**
+* This layout was generated using the ErgodoxLayoutGenerator (ELG). You can download it from https://github.com/sboesebeck/ErgodoxLayoutGenerator/releases
+* documentation about it can be found here https://boesebeck.name/2016/04/16/ergodoxlayoutgenerator-documentation/
+* Thanks to the team of Erez Zukerman for building the great Ergodox-EZ!
+*
+* use at own risk!
+**/
+
 <#list layout.layers?keys as layer>
 #define ${layer} ${layer?index}
 </#list>
@@ -28,6 +37,10 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 <#list layout.layers?keys as layer>
     <#assign rowidx=0>
     <#assign row=0>
+/**
+* Layer: ${layer}
+${asciilegend[layer]}
+**/
 [${layer}]=KEYMAP(
     <#assign l=layout.layers[layer]/>
 //left half

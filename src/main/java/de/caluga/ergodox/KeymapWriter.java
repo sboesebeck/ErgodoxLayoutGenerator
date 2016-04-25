@@ -207,28 +207,106 @@ public class KeymapWriter {
         Map<String, String> legendByName = new HashMap<>();
 
         for (String lName : layout.getLayers().keySet()) {
-            ErgodoxLayoutLayer l = layout.getLayers().get(lName);
+            ErgodoxLayoutLayer layer = layout.getLayers().get(lName);
+            ErgodoxLayoutLayer l = layer;
             int maxLen = 0;
             for (Key k : l.getLayout()) {
                 String keyDisplayText = Main.getKeyDisplayText(k.getValue(), layout.getMacros());
-                if (keyDisplayText.length() > maxLen) maxLen = keyDisplayText.length();
+                String[] split = keyDisplayText.split("\n");
+                for (String s : split) {
+                    if (s.length() > maxLen) maxLen = s.length();
+                }
             }
             maxLen += 2; //space left and right
+
+            String screen[][] = new String[8 * 3 + 5][maxLen * 16 + 5]; //virtual Screen
+
+            int screenCol = 0;
+            int screenRow = 0;
             int row = 0;
             int rowidx = 0;
-            for (int idx = 0; idx < l.getLayout().size() / 2; idx++, rowidx++) {
-                if (rowidx >= l.getRowLength().get(row)) {
-                    row++;
-                    rowidx = 0;
-                    asciiLegend.append("\n");
-                    asciiLegend.append("---------------------------------------");
+            int idx = 0;
+            int xoff = 0;
+            for (Key k : layer.getLayout()) {
+
+                idx++;
+                if (k instanceof Key.NullKey) {
+                    idx--;
+                    screenCol += maxLen;
+                    continue;
                 }
 
-                asciiLegend.append("");
+                drawStringAt(screen, "/", screenCol, screenRow);
+                drawStringAt(screen, "\\", screenCol + maxLen - 1, screenRow + 3);
+                drawStringAt(screen, "\\", screenCol, screenRow + 3);
+                drawStringAt(screen, "/", screenCol + maxLen - 1, screenRow);
+                for (int i = 0; i < maxLen - 2; i++) {
+                    drawStringAt(screen, "-", screenCol + 1 + i, screenRow);
+                    drawStringAt(screen, "-", screenCol + 1 + i, screenRow + 3);
+                }
+                drawStringAt(screen, "|", screenCol, screenRow + 1);
+                drawStringAt(screen, "|", screenCol, screenRow + 2);
+//                drawStringAt(screen,"|",screenCol,screenRow+3);
+                drawStringAt(screen, "|", screenCol + maxLen, screenRow + 1);
+                drawStringAt(screen, "|", screenCol + maxLen, screenRow + 2);
+//                drawStringAt(screen,"|",screenCol+maxLen,screenRow+3);
+                drawStringAt(screen, Main.getKeyDisplayText(k.getValue(), layout.getMacros()), screenCol + 2, screenRow + 1);
+                if (idx >= layer.getRowLength().get(row)) {
+
+                    row++;
+                    while (row < layer.getRowLength().size() && layer.getRowLength().get(row) == 0) {
+                        row++;
+                        screenRow += 3;
+                    }
+                    if (row >= layer.getRowLength().size()) {
+                        //switch to right half
+                        screenRow = 0;
+                        xoff = maxLen * 8 + 3;
+                        row = 0;
+                        idx = 0;
+                    } else {
+                        screenRow += 3;
+                        idx = 0;
+                    }
+                    screenCol = xoff;
+                } else {
+//                    if (k != null) {
+                    screenCol += maxLen;
+//                    }
+                }
+
             }
+            asciiLegend.append("* ");
+            for (int r = 0; r < screen.length; r++) {
+                for (int c = 0; c < screen[r].length; c++) {
+                    if (screen[r][c] == null)
+                        asciiLegend.append(" ");
+                    else
+                        asciiLegend.append(screen[r][c]);
+                }
+                asciiLegend.append("\n* ");
+            }
+            legendByName.put(lName, asciiLegend.toString());
+            asciiLegend.setLength(0);
         }
+        model.put("asciilegend", legendByName);
 
         template.process(model, new FileWriter(to));
+    }
+
+    private void drawStringAt(String[][] screen, String str, int col, int row) {
+        int colStart = col;
+        for (int i = 0; i < str.length(); i++) {
+
+            String ch = str.substring(i, i + 1);
+            if (ch.equals("\n")) {
+                row++;
+                col = colStart;
+                continue;
+            }
+            if (row <= screen.length && col <= screen[row].length)
+                screen[row][col++] = ch;
+        }
     }
 
     public void getReleaseCString(StringBuilder b, List<MacroAction> lst) {
