@@ -1072,20 +1072,22 @@ public class Main extends Application {
 
     private void openKeymap(Stage primaryStage) {
         try {
-            DirectoryChooser fc = new DirectoryChooser();
-            if (qmkSourceDir == null) {
-                fc.setInitialDirectory(new File(System.getProperty("user.home")));
+            FileChooser fc = new FileChooser();
+            if (qmkSourceDir != null) {
+                fc.setInitialDirectory(new File(qmkSourceDir.getPath() + "/keyboard/ergodox_ez/keymaps/"));
             } else {
-                fc.setInitialDirectory(new File(qmkSourceDir.getPath() + "/keyboard/ergodox_ez/keymaps"));
+                fc.setInitialDirectory(new File(System.getProperty("user.home")));
             }
-            fc.setTitle("Choose ergodox-keymap directory");
-            File selected = fc.showDialog(primaryStage);
-            if (selected == null) return;
+            FileChooser.ExtensionFilter filter = new FileChooser.ExtensionFilter("Keymap-Files", "keymap.c", "*.c");
+            fc.getExtensionFilters().add(filter);
+            fc.setSelectedExtensionFilter(filter);
 
-            readKeymapFile(primaryStage, selected);
+            File file = fc.showOpenDialog(null);
+            if (file == null) return;
+            readKeymapFile(primaryStage, file);
 
 
-            applicationSettings.setProperty(lastOpenedFile, selected.getAbsolutePath());
+            applicationSettings.setProperty(lastOpenedFile, file.getAbsolutePath());
             saveConfig();
 
         } catch (Exception e) {
