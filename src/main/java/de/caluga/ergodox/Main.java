@@ -714,12 +714,14 @@ public class Main extends Application {
         while ((l = br.readLine()) != null) {
             wr.write(l);
             wr.write("\n");
+            System.out.println(l);
         }
 
         br = new BufferedReader(new InputStreamReader(p.getInputStream()));
         while ((l = br.readLine()) != null) {
             wr.write(l);
             wr.write("\n");
+            System.out.println(l);
         }
         p.waitFor();
         return p.exitValue();
