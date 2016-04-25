@@ -704,25 +704,50 @@ public class Main extends Application {
         }
     }
 
-    private int execCommand(Writer wr, String cmd) throws Exception {
+    private int execCommand(final Writer wr, String cmd) throws Exception {
         String pth = System.getenv("PATH");
         pth += ":/usr/local/bin";
         wr.write("---------------------->        Running command: " + cmd + "\n");
         Process p = Runtime.getRuntime().exec(cmd, new String[]{"PATH=" + pth, "KEYMAP=" + currentKeymap}, new File(qmkSourceDir.getAbsolutePath() + "/keyboard/ergodox_ez/"));
-        BufferedReader br = new BufferedReader(new InputStreamReader(p.getErrorStream()));
-        String l = null;
-        while ((l = br.readLine()) != null) {
-            wr.write(l);
-            wr.write("\n");
-            System.out.println(l);
-        }
 
-        br = new BufferedReader(new InputStreamReader(p.getInputStream()));
-        while ((l = br.readLine()) != null) {
-            wr.write(l);
-            wr.write("\n");
-            System.out.println(l);
-        }
+
+        new Thread() {
+            public void run() {
+                String l = null;
+                BufferedReader br = new BufferedReader(new InputStreamReader(p.getErrorStream()));
+                try {
+                    while ((l = br.readLine()) != null) {
+
+                        wr.write(l);
+                        wr.write("\n");
+                        System.out.println(l);
+
+                    }
+                } catch (IOException e) {
+                    //TODO: Implement Handling
+                    throw new RuntimeException(e);
+                }
+            }
+        }.start();
+
+        new Thread() {
+            public void run() {
+                BufferedReader br = new BufferedReader(new InputStreamReader(p.getInputStream()));
+                String l = null;
+                try {
+                    while ((l = br.readLine()) != null) {
+                        wr.write(l);
+                        wr.write("\n");
+                        System.out.println(l);
+                    }
+                } catch (IOException e) {
+                    //TODO: Implement Handling
+                    throw new RuntimeException(e);
+                }
+            }
+        }.start();
+
+
         p.waitFor();
         return p.exitValue();
 
