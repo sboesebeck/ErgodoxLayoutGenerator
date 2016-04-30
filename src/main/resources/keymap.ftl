@@ -29,7 +29,12 @@
 </#list>
 
 <#list layout.macros?keys as macro>
+    <#attempt>
+    //macro name is number ${macro?number}
+        <#recover>
 #define ${macro} ${macro?index}
+
+    </#attempt>
 </#list>
 
 //Layout ${name!} generated with ${version}

@@ -193,6 +193,9 @@ public class MacroEditor {
         });
         ok.addEventHandler(ActionEvent.ACTION, event -> {
             Macro m = null;
+            if (nameTF.getText().matches("^[0-9.]+§")) {
+                nameTF.setText("M_"); //avoiding number-names for macros, would kill compilation
+            }
             if (typeMacroRB.isSelected()) {
                 m = getTypeMacro();
             } else if (longPMacroRB.isSelected()) {

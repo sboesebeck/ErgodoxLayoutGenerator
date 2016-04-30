@@ -137,6 +137,7 @@ public class Main extends Application {
     private Label legendMacroCall;
     private Label legendModifierKey;
     private Label legendCombination;
+    private Label legendMomLayer;
     private Label legendHoldKey;
     private Label keyDescription;
     private Button saveImgBtn;
@@ -146,8 +147,8 @@ public class Main extends Application {
     private Label led2;
     private Label led3;
     private ErgodoxLayout ergodoxLayout;
-    private String lastOpenedFile = "last_opened_file";
 
+    private String lastOpenedFile = "last_opened_file";
     private List<GuiKey> guiKeys = new ArrayList<>();
     private Button compileBtn;
 
@@ -195,7 +196,7 @@ public class Main extends Application {
         if (kval == null) return "";
         if (kval.equals("KC_TRNS")) {
             ret = "";
-        } else if (kval.startsWith("TG(")) {
+        } else if (kval.startsWith("TG(") || kval.startsWith("MO(")) {
             ret = kval.substring(3).replaceAll("\\)", "");
         } else if (kval.startsWith("ALL_T(")) {
             String s = kval.substring(6).replaceAll("\\)", "");
@@ -428,7 +429,7 @@ public class Main extends Application {
                         doAssignMacro(k1);
                     } else if (k1.getValue().startsWith("LT(")) {
                         doAssignLT(k1);
-                    } else if (k1.getValue().startsWith("TG(")) {
+                    } else if (k1.getValue().startsWith("TG(") || k1.getValue().startsWith("MO(")) {
                         doAssingLayerToggle(k1);
                     } else {
                         doAssignKey(k1);
@@ -584,6 +585,8 @@ public class Main extends Application {
         layoutLabel(legendCombination, Color.LIGHTCYAN);
         legendHoldKey = new Label("Type Key \n hold key");
         layoutLabel(legendHoldKey, Color.LIGHTSKYBLUE);
+        legendMomLayer = new Label("momentary\ntoggle layer");
+        layoutLabel(legendMomLayer, Color.LIGHTSEAGREEN);
 
         keyDescription = new Label("");
 
@@ -634,6 +637,7 @@ public class Main extends Application {
         canvas.getChildren().add(led3);
         canvas.getChildren().add(keyDescription);
         canvas.getChildren().add(compileBtn);
+        canvas.getChildren().add(legendMomLayer);
         Platform.runLater(() -> layout());
 //        layout();
 
@@ -1134,7 +1138,7 @@ public class Main extends Application {
 
 
             Platform.runLater(() -> layout());
-            primaryStage.setTitle(selected.getName());
+            primaryStage.setTitle(selected.getParentFile().getName());
             currentKeymap = selected.getParentFile().getName();
         } catch (Exception e) {
             showErrorMessage("Could not parse keymap file", e);
@@ -1183,6 +1187,8 @@ public class Main extends Application {
                     bgcol = Color.LIGHTGREEN.darker();
                 } else if (kval.startsWith("M(")) {
                     bgcol = Color.LIGHTYELLOW.darker();
+                } else if (kval.startsWith("MO(")) {
+                    bgcol = Color.LIGHTSEAGREEN.darker();
                 } else if (kval.startsWith("TG(")) {
                     bgcol = Color.LIGHTCORAL.darker();
                 } else if (kval.contains("_T(")) {
@@ -1268,6 +1274,7 @@ public class Main extends Application {
         legendStandardKey.relocate(currentWindowWidth - 100, currentWindowHeight - 140);
 
         legendHoldKey.relocate(currentWindowWidth - 200, currentWindowHeight - 100);
+        legendMomLayer.relocate(currentWindowWidth - 200, currentWindowHeight - 140);
 
         ledDesc.relocate(currentWindowWidth - 200, 50);
         led1.relocate(currentWindowWidth - 150, 45);
@@ -1292,6 +1299,8 @@ public class Main extends Application {
         String ret = "";
         if (kval.equals("KC_TRNS")) {
             ret = "Transparent key - fall back base layer";
+        } else if (kval.startsWith("MO(")) {
+            ret = "momentary toggle layer " + kval.substring(3).replaceAll("\\)", "");
         } else if (kval.startsWith("TG(")) {
             ret = "Toggle layer " + kval.substring(3).replaceAll("\\)", "");
         } else if (kval.startsWith("ALL_T(")) {

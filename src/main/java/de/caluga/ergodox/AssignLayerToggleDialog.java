@@ -91,6 +91,8 @@ public class AssignLayerToggleDialog {
         grid.setHgap(10);
         grid.setVgap(10);
         grid.setPadding(new Insets(20, 150, 10, 10));
+        CheckBox moCBX = new CheckBox("momentary switch (as long as key is held)");
+        grid.add(moCBX, 0, 1, 2, 1);
 
         ComboBox<String> bx = new ComboBox<>();
         for (String layerName : ergodoxLayout.getLayers().keySet()) {
@@ -98,17 +100,19 @@ public class AssignLayerToggleDialog {
         }
         bx.addEventHandler(KeyEvent.KEY_PRESSED, event -> {
             if (event.getCode().equals("ENTER")) {
-                k.setValue("TG(" + bx.getSelectionModel().getSelectedItem() + ")");
-                dialog.close();
+                onOk(k, bx.getSelectionModel().getSelectedItem(), moCBX.isSelected());
             }
         });
+
+
         Node assignButton = dialog.getDialogPane().lookupButton(assignButtonType);
         assignButton.setDisable(true);
         String assignedValue = k.getValue();
-        if (assignedValue != null && assignedValue.startsWith("TG(")) {
+        if (assignedValue != null && (assignedValue.startsWith("TG(") || assignedValue.startsWith("MO("))) {
             bx.getSelectionModel().select(assignedValue.substring(3, assignedValue.length() - 1));
             assignButton.setDisable(false);
         }
+        if (assignedValue != null) moCBX.setSelected(assignedValue.startsWith("MO("));
         grid.add(new Label("Layer:"), 0, 0);
         grid.add(bx, 1, 0);
 
@@ -128,7 +132,16 @@ public class AssignLayerToggleDialog {
             if (btn.getButtonData().equals(ButtonBar.ButtonData.CANCEL_CLOSE)) return;
             //Got selection ok
             String selectedItem = bx.getSelectionModel().getSelectedItem();
-            k.setValue("TG(" + selectedItem + ")");
+//                k.setValue("TG(" + selectedItem + ")");
+            onOk(k, selectedItem, moCBX.isSelected());
         });
+    }
+
+    private void onOk(Key k, String layer, boolean mo) {
+        if (mo) {
+            k.setValue("MO(" + layer + ")");
+        } else {
+            k.setValue("TG(" + layer + ")");
+        }
     }
 }
