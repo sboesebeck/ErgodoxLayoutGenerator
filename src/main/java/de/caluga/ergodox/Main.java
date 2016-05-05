@@ -689,7 +689,7 @@ public class Main extends Application {
             if (execCommand(wr, "make clean") != 0) throw new RuntimeException("Make clean failed!");
             if (execCommand(wr, "make") != 0) throw new RuntimeException("Compilation failed");
             showLongContent("Compilation sucessful", wr.toString());
-            Alert a = new Alert(Alert.AlertType.CONFIRMATION, "Shall I copy the resulting .hex-file to the corresponding layout dir?", ButtonType.YES, ButtonType.NO);
+            Alert a = new Alert(Alert.AlertType.CONFIRMATION, "Shall I copy the .hex-file to the layout dir:\n" + currentKeymap + "?", ButtonType.YES, ButtonType.NO);
             Optional<ButtonType> res = a.showAndWait();
             if (res.isPresent()) {
                 if (res.get().equals(ButtonType.YES)) {
