@@ -1,0 +1,11 @@
+#!/bin/bash
+
+xsetroot
+xterm -e 'figlet "PleaseWait! - compiling sources"; read'&
+pd=$!
+xterm -e 'cd /home/elg/ErgodoxLayoutGenerator/; git pull; mvn install'
+xterm -e 'cd /home/elg/qmk_firmware; git pull'
+xterm -e 'java -jar /home/elg/ErgodoxLayoutGenerator/target/ergodoxgenerator-1.0-SNAPSHOT-shaded.jar'&
+cd /home/elg
+./teensy.64bit&
+kill -9 $pd
