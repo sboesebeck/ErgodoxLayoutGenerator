@@ -366,7 +366,7 @@ public class KeymapParser {
                     //check Macro
                     String macro = value.substring(2, value.length() - 1);
                     if (keymapMacros.get(macro) == null) {
-                        Alert a = new Alert(Alert.AlertType.WARNING, "Call to unknown macro " + macro + " - might cause problems compiling it", ButtonType.CLOSE);
+                        Alert a = new Alert(Alert.AlertType.WARNING, "Call to unknown macro " + macro + "\nmight cause problems compiling it", ButtonType.CLOSE);
                         a.showAndWait();
                     }
                 } else if (k.getValue().startsWith("LT(")) {
@@ -382,14 +382,14 @@ public class KeymapParser {
                         try {
                             ErgodoxKeyCode c = ErgodoxKeyCode.valueOf(splt[1]);
                         } catch (IllegalArgumentException e) {
-                            new Alert(Alert.AlertType.WARNING, "Probably unknown keycode found in LT()-call: " + value + " - might cause problems compiling, will cause problems saving!", ButtonType.CLOSE).showAndWait();
+                            new Alert(Alert.AlertType.WARNING, "Probably unknown keycode found in LT()-call: " + value + "\nmight cause problems compiling, will cause problems saving!", ButtonType.CLOSE).showAndWait();
                         }
                     }
                 } else if (k.getValue().startsWith("MO(") || k.getValue().startsWith("TG(")) {
                     //check layer
                     value = k.getValue().substring(3, k.getValue().length() - 1);
                     if (ret.get(value) == null) {
-                        new Alert(Alert.AlertType.WARNING, "Reference to unknown layer found " + value + " - might cause problems compiling it.", ButtonType.CLOSE).showAndWait();
+                        new Alert(Alert.AlertType.WARNING, "Reference to unknown layer found " + value + "\nmight cause problems compiling it.", ButtonType.CLOSE).showAndWait();
                     }
                 } else if (value.startsWith("LGUI(") || value.startsWith("LALT(") || value.startsWith("LSFT(") || value.startsWith("LCTL")) {
                     value = value.substring(5, value.length() - 1);
@@ -399,21 +399,21 @@ public class KeymapParser {
                     try {
                         ErgodoxKeyCode c = ErgodoxKeyCode.valueOf(value);
                     } catch (IllegalArgumentException e) {
-                        new Alert(Alert.AlertType.WARNING, "Probably unknown keycode found in keymap: " + value + " - might cause problems compiling, will cause problems saving!", ButtonType.CLOSE).showAndWait();
+                        new Alert(Alert.AlertType.WARNING, "Probably unknown keycode found in keymap: " + value + "\nmight cause problems compiling, will cause problems saving!", ButtonType.CLOSE).showAndWait();
                     }
                 } else if (k.getValue().startsWith("GUI_T(") || k.getValue().startsWith("ALT_T(") || k.getValue().startsWith("CTL_T(") || k.getValue().startsWith("ALL_T(") || k.getValue().startsWith("MEH_T(")) {
                     value = value.substring(6, value.length() - 1);
                     try {
                         ErgodoxKeyCode c = ErgodoxKeyCode.valueOf(value);
                     } catch (IllegalArgumentException e) {
-                        new Alert(Alert.AlertType.WARNING, "Probably unknown keycode found in keymap: " + value + " - might cause problems compiling, will cause problems saving!", ButtonType.CLOSE).showAndWait();
+                        new Alert(Alert.AlertType.WARNING, "Probably unknown keycode found in keymap: " + value + "\nmight cause problems compiling, will cause problems saving!", ButtonType.CLOSE).showAndWait();
                     }
                 } else if (k.getValue().contains("(")) {
                     //probably unsupported function call
-                    Alert a = new Alert(Alert.AlertType.WARNING, "WARNING: Unsupported function call " + k.getValue() + " - might cause problems, when saving!", ButtonType.CLOSE);
+                    Alert a = new Alert(Alert.AlertType.WARNING, "WARNING: Unsupported function call " + k.getValue() + "\nmight cause problems, when saving!", ButtonType.CLOSE);
                     a.showAndWait();
                 } else if (k.getValue().startsWith("KC_FN")) {
-                    new Alert(Alert.AlertType.WARNING, "There is no support for FN-Keys! Do not write this layout, you will lose functionality! You can easily recreate the functionality using macros", ButtonType.CLOSE).showAndWait();
+                    new Alert(Alert.AlertType.WARNING, "There is no support for FN-Keys! Do not write this layout, you will lose functionality!\nYou can easily recreate the functionality using macros", ButtonType.CLOSE).showAndWait();
                 }
             }
         }
