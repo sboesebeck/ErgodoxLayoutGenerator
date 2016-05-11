@@ -408,12 +408,12 @@ public class KeymapParser {
                     } catch (IllegalArgumentException e) {
                         new Alert(Alert.AlertType.WARNING, "Probably unknown keycode found in keymap: " + value + "\nmight cause problems compiling, will cause problems saving!", ButtonType.CLOSE).showAndWait();
                     }
+                } else if (k.getValue().startsWith("KC_FN") || k.getValue().startsWith("F(")) {
+                    new Alert(Alert.AlertType.WARNING, "There is no support for FN-Keys! Do not write this layout, you will lose functionality!\nYou can easily recreate the functionality using macros\nKey set to: " + k.getValue(), ButtonType.CLOSE).showAndWait();
                 } else if (k.getValue().contains("(")) {
                     //probably unsupported function call
                     Alert a = new Alert(Alert.AlertType.WARNING, "WARNING: Unsupported function call " + k.getValue() + "\nmight cause problems, when saving!", ButtonType.CLOSE);
                     a.showAndWait();
-                } else if (k.getValue().startsWith("KC_FN")) {
-                    new Alert(Alert.AlertType.WARNING, "There is no support for FN-Keys! Do not write this layout, you will lose functionality!\nYou can easily recreate the functionality using macros", ButtonType.CLOSE).showAndWait();
                 }
             }
         }

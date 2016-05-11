@@ -243,7 +243,7 @@ public class MacroEditor {
             } else if (theMacro instanceof CustomMacro) {
                 customMacro.setSelected(true);
                 showCustomMacro(content);
-                macroContent1.setText(((CustomMacro) theMacro).getContent());
+                textArea.setText(((CustomMacro) theMacro).getContent());
             } else if (theMacro instanceof TypeMacro) {
                 typeMacroRB.setSelected(true);
                 showTypeMacro(content);
