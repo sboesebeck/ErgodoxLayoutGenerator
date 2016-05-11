@@ -67,6 +67,8 @@ With Macros you can significantly improve things you can do with your keyboard. 
 You might ask, why are there some macros exactly copying the standard features, like LT()?
 Thing is, that LT does not work good with combinations of keys. For example, you want to switch to a layer, if the key is held, but want it to type SHIFT-1 (for !) when typed. This will not work without the macro.
 
+Also in the documentation there are FN-Keys mentioned which are not yet supported. This functionality can easily be created using macros (at least I do not know of something that isn't). Hence I used only macros for implementing
+those features, no need for having both in the ELG. Although it makes reading in some keymaps hard or impossible.
 
 ## Disclaimer
 
