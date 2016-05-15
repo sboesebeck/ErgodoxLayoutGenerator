@@ -49,7 +49,7 @@ ${asciilegend[layer]}
 [${layer}]=KEYMAP(
     <#assign l=layout.layers[layer]/>
 //left half
-    <#list layout.layers[layer].layout as key><#if key.skip>       <#else><#assign rowidx=rowidx+1/><#if key.value?? && !key.value?matches("\\s+") && key.value!="">${key.value}<#else></#if><#sep>, <#if (rowidx>=l.rowLength[row] )><#assign row=row+1/><#if (row<l.rowLength?size && l.rowLength[row]==0)><#assign row=row+1/></#if><#assign rowidx =0><#if (row >=l.rowLength?size)><#assign row=0>
+    <#list layout.layers[layer].layout as key><#if key.skip>       <#else><#assign rowidx=rowidx+1/><#if key.value?? && !key.value?matches("^ *$") && key.value!="">${key.value}<#else>KC_TRNS</#if><#sep>, <#if (rowidx>=l.rowLength[row] )><#assign row=row+1/><#if (row<l.rowLength?size && l.rowLength[row]==0)><#assign row=row+1/></#if><#assign rowidx =0><#if (row >=l.rowLength?size)><#assign row=0>
     //right half</#if>
     </#if></#if></#list>),
 </#list>
