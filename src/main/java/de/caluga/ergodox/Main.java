@@ -853,6 +853,11 @@ public class Main extends Application {
     public void saveKeymap() {
         try {
             FileChooser fc = new FileChooser();
+            if (qmkSourceDir == null || !qmkSourceDir.exists()) {
+                Alert a = new Alert(Alert.AlertType.ERROR, "Cannot save if QMK-Sourcedir is not set!", ButtonType.CLOSE);
+                a.showAndWait();
+                return;
+            }
             File startFile = new File(qmkSourceDir.getPath() + "/keyboard/ergodox_ez/keymaps/" + currentKeymap + "/keymap.c");
             if (!startFile.exists()) {
                 startFile = new File(currentKeymap);
@@ -976,6 +981,11 @@ public class Main extends Application {
     private void saveAsPng() {
         try {
             FileChooser fc = new FileChooser();
+            if (qmkSourceDir == null || !qmkSourceDir.exists()) {
+                Alert a = new Alert(Alert.AlertType.ERROR, "Cannot save image if QMK-Sourcedir is not set!", ButtonType.CLOSE);
+                a.showAndWait();
+                return;
+            }
             File startFile = new File(qmkSourceDir.getPath() + "/keyboard/ergodox_ez/keymaps/" + currentKeymap);
             if (!startFile.exists()) {
                 startFile = new File(currentKeymap);
