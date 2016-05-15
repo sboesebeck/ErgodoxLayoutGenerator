@@ -999,7 +999,14 @@ public class Main extends Application {
             if (file == null) return;
             double width = canvas.getWidth();
             double height = canvas.getHeight();
+            Alert a = new Alert(Alert.AlertType.CONFIRMATION, "create pngs for every layer?", ButtonType.NO, ButtonType.YES);
+            boolean createLayerPng = false;
+            Optional<ButtonType> r = a.showAndWait();
+            if (r.isPresent() && r.get().equals(ButtonType.YES)) {
+                createLayerPng = true;
 
+            }
+            if (!file.getName().endsWith(".png")) file = new File(file.getAbsolutePath() + ".png");
 //        canvas.setPrefHeight(1080);
 //        canvas.setPrefWidth(1920);
             updateWindowHeight(1280);
@@ -1037,6 +1044,13 @@ public class Main extends Application {
                 layout();
                 image = canvas.snapshot(new SnapshotParameters(), null);
                 img.getGraphics().drawImage(SwingFXUtils.fromFXImage(image, null), 0, i * snapshotHeight, null);
+                if (createLayerPng) {
+                    String fn = file.getAbsolutePath().substring(0, file.getAbsolutePath().length() - 4); //remove .png
+                    fn += "_" + currentLayer.getName() + ".png";
+                    BufferedImage layerImg = new BufferedImage((int) image.getWidth(), snapshotHeight, BufferedImage.TYPE_INT_RGB);
+                    layerImg.getGraphics().drawImage(SwingFXUtils.fromFXImage(image, null), 0, 0, null);
+                    ImageIO.write(layerImg, "png", new File(fn));
+                }
             }
 
             int x = 50;
