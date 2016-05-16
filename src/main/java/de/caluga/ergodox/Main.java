@@ -1035,7 +1035,6 @@ public class Main extends Application {
             createLayer.setVisible(false);
             deleteLayer.setVisible(false);
             keyDescription.setVisible(false);
-            renameLayer.setVisible(false);
 
 
             for (int i = 0; i < layerCombo.getItems().size(); i++) {
