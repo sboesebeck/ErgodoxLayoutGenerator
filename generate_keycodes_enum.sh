@@ -4,7 +4,7 @@ cd $1
 
 echo "package de.caluga.ergodox;"
 echo
-echo "public enum KeyCode {"
+echo "public enum ErgodoxKeyCode {"
 
 grep "#define" ./quantum/keymap_common.h | cut -f 2 -d' '| grep -v ')'| grep -v '(' | sed -e 's/$/,/' >> /tmp/$$.tmp
 grep KC_ ./tmk_core/common/keycode.h | grep -v '#define'|tr -d ' '|tr =/ ,,|cut -f1 -d, |sed -e 's/$/,/' >> /tmp/$$.tmp
