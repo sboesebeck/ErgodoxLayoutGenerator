@@ -863,7 +863,7 @@ public class Main extends Application {
                 return;
             }
             File startFile = new File(qmkSourceDir.getPath() + "/keyboard/ergodox_ez/keymaps/" + currentKeymap + "/keymap.c");
-            if (!startFile.exists()) {
+            if (!startFile.exists() && currentKeymap != null) {
                 startFile = new File(currentKeymap);
             }
             if (!startFile.exists()) {

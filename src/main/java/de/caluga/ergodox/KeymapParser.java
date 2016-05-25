@@ -399,14 +399,21 @@ public class KeymapParser {
                     try {
                         ErgodoxKeyCode c = ErgodoxKeyCode.valueOf(value);
                     } catch (IllegalArgumentException e) {
-                        new Alert(Alert.AlertType.WARNING, "Probably unknown keycode found in keymap: " + value + "\nmight cause problems compiling, will cause problems saving!", ButtonType.CLOSE).showAndWait();
+                        unknownKeyCodeAlert(value);
                     }
-                } else if (k.getValue().startsWith("GUI_T(") || k.getValue().startsWith("SHFT_T(") || k.getValue().startsWith("ALT_T(") || k.getValue().startsWith("CTL_T(") || k.getValue().startsWith("ALL_T(") || k.getValue().startsWith("MEH_T(")) {
+                } else if (k.getValue().startsWith("SHFT_T(")) {
+                    value = value.substring(7, value.length() - 1);
+                    try {
+                        ErgodoxKeyCode c = ErgodoxKeyCode.valueOf(value);
+                    } catch (IllegalArgumentException e) {
+                        unknownKeyCodeAlert(value);
+                    }
+                } else if (k.getValue().startsWith("GUI_T(") || k.getValue().startsWith("ALT_T(") || k.getValue().startsWith("CTL_T(") || k.getValue().startsWith("ALL_T(") || k.getValue().startsWith("MEH_T(")) {
                     value = value.substring(6, value.length() - 1);
                     try {
                         ErgodoxKeyCode c = ErgodoxKeyCode.valueOf(value);
                     } catch (IllegalArgumentException e) {
-                        new Alert(Alert.AlertType.WARNING, "Probably unknown keycode found in keymap: " + value + "\nmight cause problems compiling, will cause problems saving!", ButtonType.CLOSE).showAndWait();
+                        unknownKeyCodeAlert(value);
                     }
                 } else if (k.getValue().startsWith("KC_FN") || k.getValue().startsWith("F(")) {
                     new Alert(Alert.AlertType.WARNING, "There is no support for FN-Keys! Do not write this layout, you will lose functionality!\nYou can easily recreate the functionality using macros\nKey set to: " + k.getValue(), ButtonType.CLOSE).showAndWait();
@@ -421,6 +428,10 @@ public class KeymapParser {
 
         return layout;
 //        System.out.println(fileContent.toString());
+    }
+
+    public void unknownKeyCodeAlert(String value) {
+        new Alert(Alert.AlertType.WARNING, "Probably unknown keycode found in keymap: " + value + "\nmight cause problems compiling, will cause problems saving!", ButtonType.CLOSE).showAndWait();
     }
 
     private int getTextBetweenBraces(int idx, int brCount) {
