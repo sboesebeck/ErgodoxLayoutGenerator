@@ -401,7 +401,7 @@ public class KeymapParser {
                     } catch (IllegalArgumentException e) {
                         new Alert(Alert.AlertType.WARNING, "Probably unknown keycode found in keymap: " + value + "\nmight cause problems compiling, will cause problems saving!", ButtonType.CLOSE).showAndWait();
                     }
-                } else if (k.getValue().startsWith("GUI_T(") || k.getValue().startsWith("ALT_T(") || k.getValue().startsWith("CTL_T(") || k.getValue().startsWith("ALL_T(") || k.getValue().startsWith("MEH_T(")) {
+                } else if (k.getValue().startsWith("GUI_T(") || k.getValue().startsWith("SHFT_T(") || k.getValue().startsWith("ALT_T(") || k.getValue().startsWith("CTL_T(") || k.getValue().startsWith("ALL_T(") || k.getValue().startsWith("MEH_T(")) {
                     value = value.substring(6, value.length() - 1);
                     try {
                         ErgodoxKeyCode c = ErgodoxKeyCode.valueOf(value);

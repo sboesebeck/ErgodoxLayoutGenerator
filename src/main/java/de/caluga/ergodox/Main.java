@@ -206,6 +206,10 @@ public class Main extends Application {
             String s = kval.substring(6).replaceAll("\\)", "");
             s = getKeyDisplayName(s.substring(s.lastIndexOf('_') + 1));
             ret = s + "\nMeh";
+        } else if (kval.startsWith("SHFT_T(")) {
+            String s = kval.substring(7).replaceAll("\\)", "");
+            s = getKeyDisplayName(s.substring(s.lastIndexOf('_') + 1));
+            ret = s + "\nSHIFT";
         } else if (kval.startsWith("ALT_T(")) {
             String s = kval.substring(6).replaceAll("\\)", "");
             s = getKeyDisplayName(s.substring(s.lastIndexOf('_') + 1));
@@ -1334,6 +1338,10 @@ public class Main extends Application {
             String s = kval.substring(6).replaceAll("\\)", "");
             s = getKeyDisplayName(s);
             ret = "Type key: " + s + "\nHolding key: Meh (=ALT+Ctrl+Shift)";
+        } else if (kval.startsWith("SHFT_T(")) {
+            String s = kval.substring(7).replaceAll("\\)", "");
+            s = getKeyDisplayName(s);
+            ret = "Type key: " + s + "\nHoliding key: Shift";
         } else if (kval.startsWith("ALT_T(")) {
             String s = kval.substring(6).replaceAll("\\)", "");
             s = getKeyDisplayName(s);
