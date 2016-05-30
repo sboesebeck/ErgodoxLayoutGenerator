@@ -335,7 +335,7 @@ public class AssignKeyDialog {
 
                 } else if (cnt == 1) {
                     if (shiftCbx.isSelected()) {
-                        selectedItem = "SHFT_T(" + selectedItem + ")";
+                        selectedItem = "SFT_T(" + selectedItem + ")";
                     } else if (ctrlCbx.isSelected()) {
                         selectedItem = "CTL_T(" + selectedItem + ")";
                     } else if (cmdCbx.isSelected()) {

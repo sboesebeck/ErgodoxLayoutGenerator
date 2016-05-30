@@ -401,14 +401,7 @@ public class KeymapParser {
                     } catch (IllegalArgumentException e) {
                         unknownKeyCodeAlert(value);
                     }
-                } else if (k.getValue().startsWith("SHFT_T(")) {
-                    value = value.substring(7, value.length() - 1);
-                    try {
-                        ErgodoxKeyCode c = ErgodoxKeyCode.valueOf(value);
-                    } catch (IllegalArgumentException e) {
-                        unknownKeyCodeAlert(value);
-                    }
-                } else if (k.getValue().startsWith("GUI_T(") || k.getValue().startsWith("ALT_T(") || k.getValue().startsWith("CTL_T(") || k.getValue().startsWith("ALL_T(") || k.getValue().startsWith("MEH_T(")) {
+                } else if (k.getValue().startsWith("SFT_T(") || k.getValue().startsWith("GUI_T(") || k.getValue().startsWith("ALT_T(") || k.getValue().startsWith("CTL_T(") || k.getValue().startsWith("ALL_T(") || k.getValue().startsWith("MEH_T(")) {
                     value = value.substring(6, value.length() - 1);
                     try {
                         ErgodoxKeyCode c = ErgodoxKeyCode.valueOf(value);
