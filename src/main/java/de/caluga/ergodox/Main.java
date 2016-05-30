@@ -1227,6 +1227,29 @@ public class Main extends Application {
                 b.setOuterColor(bgcol);
 //                b.backgroundProperty().setValue(new Background(new BackgroundFill(bgcol, new CornerRadii(5), Insets.EMPTY)));
                 b.setText(getKeyDisplayText(kval, ergodoxLayout.getMacros()));
+
+                double fzWidth = currentWindowWidth / 12;
+                double fzHeight = currentWindowHeight / 12;
+
+                //counting lines
+                int lines = 1;
+                int start = 0;
+                int longestLine = 0;
+                while (kval.indexOf("\n", start) >= 0) {
+                    lines++;
+                    int nidx = kval.indexOf("\n", start);
+                    int l = nidx - start;
+                    if (l > longestLine) longestLine = l;
+                    start = nidx;
+                }
+                if (longestLine == 0) longestLine = kval.length();
+                fzHeight = fzHeight / lines;
+
+                //getting longes line
+                fzWidth = fzWidth / longestLine;
+                double fz = Math.min(fzWidth, fzHeight);
+                if (fz < 8) fz = 8;
+                b.setFont(Font.font(fz));
 //                b.setFont(Font.font(8));
 //                b.setAlignment(Pos.CENTER);
 //                b.setTextAlignment(TextAlignment.CENTER);

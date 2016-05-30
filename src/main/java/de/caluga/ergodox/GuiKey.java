@@ -45,6 +45,10 @@ public class GuiKey {
         inner.setOpacity(100);
     }
 
+    public void setFont(Font f){
+        inner.setFont(f);
+    }
+
     public double getX() {
         return x;
     }
