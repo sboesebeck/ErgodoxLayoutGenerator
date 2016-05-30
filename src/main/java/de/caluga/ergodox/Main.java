@@ -1226,23 +1226,24 @@ public class Main extends Application {
                 b.setInnerColor(bgcol.brighter());
                 b.setOuterColor(bgcol);
 //                b.backgroundProperty().setValue(new Background(new BackgroundFill(bgcol, new CornerRadii(5), Insets.EMPTY)));
-                b.setText(getKeyDisplayText(kval, ergodoxLayout.getMacros()));
+                String keyDisplayText = getKeyDisplayText(kval, ergodoxLayout.getMacros());
+                b.setText(keyDisplayText);
 
-                double fzWidth = currentWindowWidth / 12;
-                double fzHeight = currentWindowHeight / 12;
+                double fzWidth = currentWindowWidth / 38;
+                double fzHeight = currentWindowHeight / 38;
 
                 //counting lines
                 int lines = 1;
                 int start = 0;
                 int longestLine = 0;
-                while (kval.indexOf("\n", start) >= 0) {
+                while (keyDisplayText.indexOf("\n", start) >= 0) {
                     lines++;
-                    int nidx = kval.indexOf("\n", start);
+                    int nidx = keyDisplayText.indexOf("\n", start) + 1;
                     int l = nidx - start;
                     if (l > longestLine) longestLine = l;
                     start = nidx;
                 }
-                if (longestLine == 0) longestLine = kval.length();
+                if (longestLine == 0) longestLine = keyDisplayText.length();
                 fzHeight = fzHeight / lines;
 
                 //getting longes line
