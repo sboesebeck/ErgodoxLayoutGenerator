@@ -1247,7 +1247,7 @@ public class Main extends Application {
                 fzHeight = fzHeight / lines;
 
                 //getting longes line
-                fzWidth = fzWidth / longestLine;
+                fzWidth = fzWidth / longestLine * 2;
                 double fz = Math.min(fzWidth, fzHeight);
                 if (fz < 8) fz = 8;
                 b.setFont(Font.font(fz));
