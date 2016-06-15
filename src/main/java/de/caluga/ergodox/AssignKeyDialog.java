@@ -183,6 +183,7 @@ public class AssignKeyDialog {
         modifierByCBox.put(altCbx, ErgodoxKeyCode.KC_LALT);
         modifierByCBox.put(cmdCbx, ErgodoxKeyCode.KC_LGUI);
 
+        Node assignButton = dialog.getDialogPane().lookupButton(assignButtonType);
         if (def != null) {
             if (def.startsWith("M(")) {
                 //Macro
@@ -233,7 +234,17 @@ public class AssignKeyDialog {
                             shiftCbx.setSelected(true);
                         } else if (m.group(1).startsWith("CTL")) {
                             ctrlCbx.setSelected(true);
+                        } else if (m.group(1).startsWith("ALL")){
+                            ctrlCbx.setSelected(true);
+                            shiftCbx.setSelected(true);
+                            cmdCbx.setSelected(true);
+                            altCbx.setSelected(true);
+                        } else if(m.group(1).startsWith("MEH")){
+                            ctrlCbx.setSelected(true);
+                            shiftCbx.setSelected(true);
+                            altCbx.setSelected(true);
                         }
+                        combinationLT.setSelected(true);
                     } else {
                         if (m.group(1).startsWith("LALT")) {
                             altCbx.setSelected(true);
@@ -251,7 +262,11 @@ public class AssignKeyDialog {
             } else {
                 keyCodexCBX.getSelectionModel().select(def);
             }
+            assignButton.setDisable(false);
+        } else {
+            assignButton.setDisable(true);
         }
+
         if (def != null) currentValue.setText("Current value: " + def);
         else currentValue.setText("Currently no value");
         grid.add(new Label("Prefix:"), 0, 0);
@@ -263,9 +278,8 @@ public class AssignKeyDialog {
         grid.add(desc, 0, 4, 2, 1);
         grid.add(currentValue, 1, 5);
 
-// Enable/Disable login button depending on whether a username was entered.
-        Node assignButton = dialog.getDialogPane().lookupButton(assignButtonType);
-        assignButton.setDisable(true);
+
+
 
 
         dialog.getDialogPane().setContent(grid);
@@ -283,7 +297,10 @@ public class AssignKeyDialog {
             for (CheckBox b : checkBoxes) {
                 if (b.isSelected()) cnt++;
             }
-            if (cnt > 1) {
+            boolean hyper=cnt==4;
+            boolean meh=cnt==3 && shiftCbx.isSelected() && altCbx.isSelected() && ctrlCbx.isSelected();
+
+            if (cnt > 1&& !hyper && !meh) {
                 if (!keyCodexCBX.getSelectionModel().getSelectedItem().startsWith("KC_")) {
                     Alert a = new Alert(Alert.AlertType.ERROR, "Would need to create macro, but macros only can work with KC_ keycodes!", ButtonType.OK);
                     a.showAndWait();
@@ -294,10 +311,10 @@ public class AssignKeyDialog {
 
             String selectedItem = keyCodexCBX.getSelectionModel().getSelectedItem();
             if (combinationLT.isSelected()) {
-                if (cnt == 4) {
+                if (hyper) {
                     //Hyper
                     selectedItem = "ALL_T(" + selectedItem + ")";
-                } else if (cnt == 3 && shiftCbx.isSelected() && altCbx.isSelected() && ctrlCbx.isSelected()) {
+                } else if (meh) {
                     //Meh
                     selectedItem = "MEH_T(" + selectedItem + ")";
                 } else if (cnt <= 3 && cnt > 1) {

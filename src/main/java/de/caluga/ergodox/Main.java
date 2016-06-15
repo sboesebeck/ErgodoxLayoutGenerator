@@ -196,6 +196,14 @@ public class Main extends Application {
         if (kval == null) return "";
         if (kval.equals("KC_TRNS")) {
             ret = "";
+        } else if (kval.equals("KC_RGHT")) {
+            ret="RIGHT";
+        } else if (kval.equals("KC_LEFT")) {
+            ret="LEFT ";
+        } else if (kval.equals("KC_DOWN")) {
+            ret="DOWN ";
+        } else if (kval.equals("KC_UP")) {
+            ret="UP   ";
         } else if (kval.startsWith("TG(") || kval.startsWith("MO(")) {
             ret = kval.substring(3).replaceAll("\\)", "");
         } else if (kval.startsWith("ALL_T(")) {
@@ -272,6 +280,10 @@ public class Main extends Application {
                 .replaceAll("RSHIFT", "Shift")
                 .replaceAll("KC_NO", "None")
                 .replaceAll("KC_", "");
+        ret = ret.replaceAll("KC_UP",   "UP   ");
+        ret = ret.replaceAll("KC_DOWN", "DOWN ");
+        ret = ret.replaceAll("KC_LEFT", "LEFT ");
+        ret = ret.replaceAll("KC_RIGHT","RIGHT");
         ret = ret.replaceAll("^AE", "Ä");
         ret = ret.replaceAll("^OE", "Ö");
         ret = ret.replaceAll("^UE", "Ü");
@@ -698,8 +710,8 @@ public class Main extends Application {
             if (res.isPresent()) {
                 if (res.get().equals(ButtonType.YES)) {
                     try {
-                        Path source = FileSystems.getDefault().getPath(qmkSourceDir.getAbsolutePath(), "keyboard", "ergodox_ez", "ergodox_ez.hex");
-                        Path dest = FileSystems.getDefault().getPath(qmkSourceDir.getAbsolutePath(), "keyboard", "ergodox_ez", "keymaps", currentKeymap, currentKeymap + ".hex");
+                        Path source = FileSystems.getDefault().getPath(qmkSourceDir.getAbsolutePath(), "keyboard", "ergodox_ez", "ergodox_ez_"+currentKeymap+".hex");
+                        Path dest = FileSystems.getDefault().getPath(qmkSourceDir.getAbsolutePath(), "keyboard", "ergodox_ez", "keymaps", currentKeymap, "compiled.hex");
                         Files.copy(source, dest, StandardCopyOption.REPLACE_EXISTING);
                     } catch (IOException e) {
                         showErrorMessage("Could not copy hex file", e);
@@ -1207,7 +1219,7 @@ public class Main extends Application {
                 GuiKey b = guiKeys.get(canvasIdx++);
                 Color bgcol = Color.LIGHTGRAY.darker();
                 String kval = k.getValue() != null ? k.getValue() : "";
-                if (kval.endsWith("SFT") || kval.endsWith("CTL") || kval.endsWith("ALT") || kval.endsWith("GUI")) {
+                if (kval.endsWith("SFT") || kval.endsWith("CTL") || kval.endsWith("ALT") || kval.endsWith("GUI") || kval.equals("KC_MEH") || kval.equals("KC_HYPR")) {
                     bgcol = Color.LIGHTBLUE.darker();
 
                 } else if (kval.startsWith("LT(")) {
