@@ -373,6 +373,10 @@ public class AssignKeyDialog {
                     } else if (altCbx.isSelected()) {
                         selectedItem = "LALT(" + selectedItem + ")";
                     }
+//                } else if (cnt > 1 && meh) {
+//                    selectedItem = "MEH(" + selectedItem + ")";
+//                } else if (cnt > 1 && hyper){
+//                    selectedItem = "ALL("+selectedItem+")";
                 } else if (cnt > 1) {
                     //macro necessary
                     TypeMacro tm = new TypeMacro();

@@ -87,10 +87,6 @@ import javafx.stage.Stage;
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.*;
-import java.nio.file.FileSystems;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
 import java.util.*;
 
 
@@ -705,19 +701,19 @@ public class Main extends Application {
             if (execCommand(wr, "make clean") != 0) throw new RuntimeException("Make clean failed!");
             if (execCommand(wr, "make") != 0) throw new RuntimeException("Compilation failed");
             showLongContent("Compilation sucessful", wr.toString());
-            Alert a = new Alert(Alert.AlertType.CONFIRMATION, "Shall I copy the .hex-file to the layout dir:\n" + currentKeymap + "?", ButtonType.YES, ButtonType.NO);
-            Optional<ButtonType> res = a.showAndWait();
-            if (res.isPresent()) {
-                if (res.get().equals(ButtonType.YES)) {
-                    try {
-                        Path source = FileSystems.getDefault().getPath(qmkSourceDir.getAbsolutePath(), "keyboard", "ergodox_ez", "ergodox_ez_"+currentKeymap+".hex");
-                        Path dest = FileSystems.getDefault().getPath(qmkSourceDir.getAbsolutePath(), "keyboard", "ergodox_ez", "keymaps", currentKeymap, "compiled.hex");
-                        Files.copy(source, dest, StandardCopyOption.REPLACE_EXISTING);
-                    } catch (IOException e) {
-                        showErrorMessage("Could not copy hex file", e);
-                    }
-                }
-            }
+//            Alert a = new Alert(Alert.AlertType.CONFIRMATION, "Shall I copy the .hex-file to the layout dir:\n" + currentKeymap + "?", ButtonType.YES, ButtonType.NO);
+//            Optional<ButtonType> res = a.showAndWait();
+//            if (res.isPresent()) {
+//                if (res.get().equals(ButtonType.YES)) {
+//                    try {
+//                        Path source = FileSystems.getDefault().getPath(qmkSourceDir.getAbsolutePath(), "keyboard", "ergodox_ez", "ergodox_ez_"+currentKeymap+".hex");
+//                        Path dest = FileSystems.getDefault().getPath(qmkSourceDir.getAbsolutePath(), "keyboard", "ergodox_ez", "keymaps", currentKeymap, "compiled.hex");
+//                        Files.copy(source, dest, StandardCopyOption.REPLACE_EXISTING);
+//                    } catch (IOException e) {
+//                        showErrorMessage("Could not copy hex file", e);
+//                    }
+//                }
+//            }
         } catch (Exception e) {
             e.printStackTrace(new PrintWriter(wr));
             showLongContent("Compilation failed", wr.toString());
