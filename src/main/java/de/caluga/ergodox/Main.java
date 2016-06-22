@@ -724,7 +724,7 @@ public class Main extends Application {
         String pth = System.getenv("PATH");
         pth += ":/usr/local/bin";
         wr.write("---------------------->        Running command: " + cmd + "\n");
-        Process p = Runtime.getRuntime().exec(cmd, new String[]{"PATH=" + pth, "KEYMAP=" + currentKeymap}, new File(qmkSourceDir.getAbsolutePath() + "/keyboard/ergodox_ez/"));
+        Process p = Runtime.getRuntime().exec(cmd, new String[]{"PATH=" + pth, "KEYMAP=" + currentKeymap}, new File(qmkSourceDir.getAbsolutePath() + "/keyboards/ergodox_ez/"));
 
 
         new Thread() {
@@ -870,12 +870,12 @@ public class Main extends Application {
                 a.showAndWait();
                 return;
             }
-            File startFile = new File(qmkSourceDir.getPath() + "/keyboard/ergodox_ez/keymaps/" + currentKeymap + "/keymap.c");
+            File startFile = new File(qmkSourceDir.getPath() + "/keyboards/ergodox_ez/keymaps/" + currentKeymap + "/keymap.c");
             if (!startFile.exists() && currentKeymap != null) {
                 startFile = new File(currentKeymap);
             }
             if (!startFile.exists()) {
-                startFile = new File(qmkSourceDir.getPath() + "/keyboard/ergodox_ez/keymaps");
+                startFile = new File(qmkSourceDir.getPath() + "/keyboards/ergodox_ez/keymaps");
             }
             if (startFile.isDirectory()) {
                 fc.setInitialDirectory(startFile);
@@ -998,12 +998,12 @@ public class Main extends Application {
                 a.showAndWait();
                 return;
             }
-            File startFile = new File(qmkSourceDir.getPath() + "/keyboard/ergodox_ez/keymaps/" + currentKeymap);
+            File startFile = new File(qmkSourceDir.getPath() + "/keyboards/ergodox_ez/keymaps/" + currentKeymap);
             if (!startFile.exists()) {
                 startFile = new File(currentKeymap);
             }
             if (!startFile.exists()) {
-                startFile = new File(qmkSourceDir.getPath() + "/keyboard/ergodox_ez/keymaps");
+                startFile = new File(qmkSourceDir.getPath() + "/keyboards/ergodox_ez/keymaps");
             }
             fc.setInitialDirectory(startFile);
             fc.setInitialFileName(currentKeymap + "_highres.png");
@@ -1138,7 +1138,7 @@ public class Main extends Application {
         try {
             FileChooser fc = new FileChooser();
             if (qmkSourceDir != null) {
-                fc.setInitialDirectory(new File(qmkSourceDir.getPath() + "/keyboard/ergodox_ez/keymaps/"));
+                fc.setInitialDirectory(new File(qmkSourceDir.getPath() + "/keyboards/ergodox_ez/keymaps/"));
             } else {
                 fc.setInitialDirectory(new File(System.getProperty("user.home")));
             }
