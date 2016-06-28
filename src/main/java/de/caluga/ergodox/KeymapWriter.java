@@ -284,6 +284,9 @@ public class KeymapWriter {
                     else
                         asciiLegend.append(screen[r][c]);
                 }
+                if (asciiLegend.toString().endsWith("\\")){
+                    asciiLegend.setLength(asciiLegend.length()-1);
+                }
                 asciiLegend.append("\n* ");
             }
             legendByName.put(lName, asciiLegend.toString());
