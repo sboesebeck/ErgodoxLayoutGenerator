@@ -60,6 +60,7 @@ package de.caluga.ergodox;/**
 
 import javafx.application.Platform;
 import javafx.event.ActionEvent;
+import javafx.event.EventHandler;
 import javafx.geometry.Insets;
 import javafx.scene.Node;
 import javafx.scene.control.*;
@@ -94,13 +95,34 @@ public class AssignLayerToggleDialog {
         CheckBox moCBX = new CheckBox("momentary switch (as long as key is held)");
         grid.add(moCBX, 0, 1, 2, 1);
 
+        CheckBox osl = new CheckBox("one shot switch");
+        grid.add(osl, 0, 2, 2, 1);
+
+        osl.addEventHandler(ActionEvent.ACTION, new EventHandler<ActionEvent>() {
+            @Override
+            public void handle(ActionEvent event) {
+                if (osl.isSelected() && moCBX.isSelected()) {
+                    moCBX.setSelected(false);
+                }
+            }
+        });
+
+        moCBX.addEventHandler(ActionEvent.ACTION, new EventHandler<ActionEvent>() {
+            @Override
+            public void handle(ActionEvent event) {
+                if (osl.isSelected() && moCBX.isSelected()) {
+                    osl.setSelected(false);
+                }
+            }
+        });
+
         ComboBox<String> bx = new ComboBox<>();
         for (String layerName : ergodoxLayout.getLayers().keySet()) {
             bx.getItems().add(layerName);
         }
         bx.addEventHandler(KeyEvent.KEY_PRESSED, event -> {
             if (event.getCode().equals("ENTER")) {
-                onOk(k, bx.getSelectionModel().getSelectedItem(), moCBX.isSelected());
+                onOk(k, bx.getSelectionModel().getSelectedItem(), moCBX.isSelected(), osl.isSelected());
             }
         });
 
@@ -111,8 +133,14 @@ public class AssignLayerToggleDialog {
         if (assignedValue != null && (assignedValue.startsWith("TG(") || assignedValue.startsWith("MO("))) {
             bx.getSelectionModel().select(assignedValue.substring(3, assignedValue.length() - 1));
             assignButton.setDisable(false);
+        } else if (assignedValue!=null && assignedValue.startsWith("OSL(")){
+            bx.getSelectionModel().select(assignedValue.substring(4,assignedValue.length()-1));
+            assignButton.setDisable(false);
         }
-        if (assignedValue != null) moCBX.setSelected(assignedValue.startsWith("MO("));
+        if (assignedValue != null) {
+            moCBX.setSelected(assignedValue.startsWith("MO("));
+            osl.setSelected(assignedValue.startsWith("OSL("));
+        }
         grid.add(new Label("Layer:"), 0, 0);
         grid.add(bx, 1, 0);
 
@@ -129,17 +157,21 @@ public class AssignLayerToggleDialog {
         Optional<ButtonType> result = dialog.showAndWait();
 
         result.ifPresent(btn -> {
-            if (btn.getButtonData().equals(ButtonBar.ButtonData.CANCEL_CLOSE)) return;
+            if (btn.getButtonData().equals(ButtonBar.ButtonData.CANCEL_CLOSE)) {
+                return;
+            }
             //Got selection ok
             String selectedItem = bx.getSelectionModel().getSelectedItem();
-//                k.setValue("TG(" + selectedItem + ")");
-            onOk(k, selectedItem, moCBX.isSelected());
+            //                k.setValue("TG(" + selectedItem + ")");
+            onOk(k, selectedItem, moCBX.isSelected(), osl.isSelected());
         });
     }
 
-    private void onOk(Key k, String layer, boolean mo) {
+    private void onOk(Key k, String layer, boolean mo, boolean osl) {
         if (mo) {
             k.setValue("MO(" + layer + ")");
+        } else if (osl) {
+            k.setValue("OSL(" + layer + ")");
         } else {
             k.setValue("TG(" + layer + ")");
         }

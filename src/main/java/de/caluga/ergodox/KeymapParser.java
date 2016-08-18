@@ -369,6 +369,11 @@ public class KeymapParser {
                         Alert a = new Alert(Alert.AlertType.WARNING, "Call to unknown macro " + macro + "\nmight cause problems compiling it", ButtonType.CLOSE);
                         a.showAndWait();
                     }
+                } else if (k.getValue().startsWith("OSL(")) { //one shot layer
+                    value=k.getValue().substring(4,k.getValue().length()-1);
+                    if (ret.get(value) == null) {
+                        new Alert(Alert.AlertType.WARNING, "OSL-Reference to unknown layer found " + value + "\nmight cause problems compiling it.", ButtonType.CLOSE).showAndWait();
+                    }
                 } else if (k.getValue().startsWith("LT(")) {
                     //check Key
                     value = k.getValue().substring(3, k.getValue().length() - 1);
